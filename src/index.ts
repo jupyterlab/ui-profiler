@@ -10,7 +10,12 @@ const plugin: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab-benchmarks/ui-profiler:plugin',
   autoStart: true,
   activate: (app: JupyterFrontEnd) => {
-    console.log('JupyterLab extension @jupyterlab-benchmarks/ui-profiler is activated!');
+    // skipPattern = '(fa-|Icon|mod-hidden)'
+    // TODO scenario UI
+
+    console.log(
+      'JupyterLab extension @jupyterlab-benchmarks/ui-profiler is activated!'
+    );
   }
 };
 
