@@ -1,4 +1,7 @@
+import { JSONSchema7 } from 'json-schema';
+
 export interface IScenario {
+  id: string;
   name: string;
   run: () => Promise<void>;
 
@@ -7,6 +10,16 @@ export interface IScenario {
 
   setup?: () => Promise<void>;
   cleanup?: () => Promise<void>;
+
+  configSchema: JSONSchema7;
+  setOptions: (options: any) => void;
+}
+
+export interface IBenchmark {
+  id: string;
+  name: string;
+  run: (scenario: IScenario, options: any) => Promise<IOutcome>;
+  configSchema: JSONSchema7;
 }
 
 export interface IResult {

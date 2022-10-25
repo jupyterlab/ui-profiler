@@ -1,0 +1,39 @@
+{
+  "title": "Tab Scenario Options",
+  "type": "object",
+  "definitions": {
+    "tab": {
+      "description": "Tab to open",
+      "type": "object",
+      "default": {
+        "type": "launcher"
+      },
+      "properties": {
+        "path": {
+          "title": "Path",
+          "description": "Path to the file/notebook to open as a tab",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "description": "Type of the tab",
+          "type": "string",
+          "enum": ["file", "launcher"]
+        }
+      },
+      "required": "type"
+    }
+  },
+  "properties": {
+    "tabs": {
+      "title": "List of tabs to use in scenario",
+      "description": "Series of two or more tabs",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/tab"
+      },
+      "default": [{ "type": "launcher" }, { "type": "launcher" }]
+    }
+  },
+  "required": ["tabs"]
+}
