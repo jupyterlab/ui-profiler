@@ -287,14 +287,23 @@ async function extractSourceMap(
   if (!cssContent) {
     return null;
   }
-  const match = cssContent.match('# sourceMappingURL=(.*)s*\\*/');
-  if (!match) {
+  const matches = cssContent.matchAll(
+    new RegExp('# sourceMappingURL=(.*)\\s*\\*/', 'g')
+  );
+  if (!matches) {
     return null;
   }
-  const url = match[1];
-  const parts = url.split('data:application/json;base64,');
-  if (parts.length > 1) {
-    return JSON.parse(atob(parts[1]));
+  let url: string = '';
+  for (const match of matches) {
+    const parts = match[1].split('data:application/json;base64,');
+    if (parts.length > 1) {
+      return JSON.parse(atob(parts[1]));
+    } else {
+      url = match[1];
+    }
+  }
+  if (url === '') {
+    return null;
   }
   const response = await fetch(url);
   return response.json();

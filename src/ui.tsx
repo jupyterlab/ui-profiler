@@ -24,6 +24,8 @@ export class UIProfiler extends ReactWidget {
     super();
   }
   render() {
+    // TODO add BenchmarkMonitor displaying progress, performance metrics etc
+    // TODO add BenchmarkHistory showing a list of most recent results
     return <BenchmarkLauncher {...this.props} />;
   }
 }
@@ -42,6 +44,7 @@ export class BenchmarkLauncher extends React.Component<
   state: IProfilerState;
 
   runBenchmark() {
+    // TODO: can we add a simple "lights out" overlay to reduce user interference while the benchmark is running (but do keep showing them progress) without interfering with measurements?
     const scenario = this.state.scenario;
     scenario.setOptions(this._value.scenario);
     return this.state.benchmark.run(scenario, this._value.benchmark);
@@ -89,7 +92,7 @@ export class BenchmarkLauncher extends React.Component<
         </label>
       );
     });
-    // TODO wrap in a signal to update on current change
+    // TODO: stop button
     return (
       <div>
         <div>
@@ -118,7 +121,9 @@ export class BenchmarkLauncher extends React.Component<
         </div>
         <div>
           <h3>Run</h3>
-          <button onClick={() => this.runBenchmark()}>Start</button>
+          <button onClick={() => this.runBenchmark().then(console.log)}>
+            Start
+          </button>
         </div>
       </div>
     );
