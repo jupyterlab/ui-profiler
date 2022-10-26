@@ -30,7 +30,7 @@ interface IRuleDescription {
   stylesheetIndex: number;
 }
 
-interface IRuleData extends IRuleDescription {
+export interface IRuleData extends IRuleDescription {
   /**
    * The CSS style rule itself.
    */

@@ -3,4 +3,5 @@ node_modules
 **/lib
 **/package.json
 **/.ipynb_checkpoints/**
+**/*.profile.json
 jupyterlab-ui-profiler

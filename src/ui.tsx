@@ -15,6 +15,7 @@ import {
 import { Widget } from '@lumino/widgets';
 import { Signal } from '@lumino/signaling';
 import { IBenchmark, IOutcome, IScenario, IProgress } from './benchmark';
+import { IRuleData } from './styleBenchmarks';
 import {
   CustomTemplateFactory,
   CustomArrayTemplateFactory,
@@ -97,12 +98,20 @@ export class ResultTable extends DataGrid {
       if (result.source) {
         result['source'] = result['source'].replace('webpack://./', '');
       }
+      if (result['rulesInBlock']) {
+        result['rulesInBlock'] = (result['rulesInBlock'] as IRuleData[]).map(
+          rule => {
+            return rule.rule.selectorText;
+          }
+        );
+      }
     }
     const first = results[0];
+    const fieldNames = Object.keys(first);
     this.dataModel = new JSONModel({
       data: results.sort((a, b) => a.min - b.min),
       schema: {
-        fields: Object.keys(first).map(key => {
+        fields: fieldNames.map(key => {
           return {
             name: key,
             type: 'string'
@@ -116,6 +125,19 @@ export class ResultTable extends DataGrid {
       dataModel: this.dataModel
     });
     this.node.style.height = '500px';
+    this.fitColumnNames('all');
+    const columnWidths = {
+      source: 425,
+      content: 100,
+      selector: 175,
+      rulesInBlock: 500
+    };
+    for (const [name, size] of Object.entries(columnWidths)) {
+      const index = fieldNames.indexOf(name);
+      if (index !== -1) {
+        this.resizeColumn('body', index, size);
+      }
+    }
   }
 }
 
@@ -165,18 +187,24 @@ export class BenchmarkMonitor extends React.Component<
   IProfilerState
 > {
   render() {
-    let start = new Date();
     return (
       <div className="up-BenchmarkMonitor">
-        <UseSignal signal={this.props.progress} initialArgs={{ percentage: 0 }}>
+        <UseSignal
+          signal={this.props.progress}
+          initialArgs={{ percentage: -1 }}
+        >
           {(sender, args) => {
             if (args!.percentage === 0) {
-              start = new Date();
+              this.start = new Date();
             }
-            const now = new Date();
-            const elapsed = now.getTime() - start.getTime();
-            const remaining =
-              ((100 - args!.percentage) * elapsed) / args!.percentage;
+            let elapsed = NaN;
+            let remaining = NaN;
+            if (this.start) {
+              const now = new Date();
+              elapsed = now.getTime() - this.start.getTime();
+              remaining =
+                ((100 - args!.percentage) * elapsed) / args!.percentage;
+            }
             return (
               <>
                 <div>
@@ -191,6 +219,7 @@ export class BenchmarkMonitor extends React.Component<
       </div>
     );
   }
+  start: Date | null = null;
 }
 
 function formatTime(miliseconds: number): string {
@@ -318,7 +347,7 @@ export class BenchmarkLauncher extends React.Component<
     return (
       <div className="up-BenchmarkLauncher">
         <div>
-          <h3>Select Benchmark</h3>
+          <h3>Benchmark</h3>
           <div onChange={this.onBenchmarkChanged.bind(this)}>{benchmarks}</div>
           <Form
             schema={this.state.benchmark.configSchema}
@@ -333,7 +362,7 @@ export class BenchmarkLauncher extends React.Component<
           />
         </div>
         <div>
-          <h3>Select Scenario</h3>
+          <h3>Scenario</h3>
           <div onChange={this.onScenarioChanged.bind(this)}>{scenarios}</div>
           <Form
             schema={this.state.scenario.configSchema}
