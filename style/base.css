@@ -65,7 +65,9 @@
   padding: 0;
 }
 
-.up-BenchmarkLauncher-choice-input:first-child {
+.up-BenchmarkLauncher-choices
+  label:first-child
+  .up-BenchmarkLauncher-choice-input {
   margin-left: 0;
 }
 
@@ -106,6 +108,7 @@
   grid-area: history;
   background-color: var(--jp-layout-color2);
   border-right: var(--jp-border-width) solid var(--jp-border-color1);
+  border-top: var(--jp-border-width) solid var(--jp-border-color1);
 }
 
 .up-BenchmarkHistory-files {
@@ -141,7 +144,7 @@
 }
 
 .up-card-heading {
-  margin: 0 4px;
+  margin: 4px 0;
 }
 
 .up-mod-completed .jp-Statusbar-ProgressBar-progress-bar > div {

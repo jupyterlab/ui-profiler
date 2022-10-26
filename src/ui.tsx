@@ -204,21 +204,25 @@ export class BenchmarkHistory extends React.Component<
     };
     this.update();
     this.update = this.update.bind(this);
-    this.props.resultAdded.connect(async (result: IBenchmarkResult) => {
+    this.props.resultAdded.connect(async (_, result: IBenchmarkResult) => {
       await this.update();
       this.setState({
         current: benchmarkFilename(result)
       });
-      console.log(this.state);
     });
   }
 
-  async update() {
+  async update(): Promise<void> {
     const dirModel = await this.props.manager.contents.get('.');
+    const files = dirModel.content.filter((a: Contents.IModel) =>
+      a.path.endsWith('.profile.json')
+    );
+    files.sort(
+      (a: Contents.IModel, b: Contents.IModel) =>
+        new Date(b.created).getTime() - new Date(a.created).getTime()
+    );
     this.setState({
-      files: dirModel.content.filter((a: Contents.IModel) =>
-        a.path.endsWith('.profile.json')
-      )
+      files: files
     });
   }
 
@@ -232,7 +236,7 @@ export class BenchmarkHistory extends React.Component<
     }
   }
 
-  render() {
+  render(): JSX.Element {
     const list = this.state.files.map(file => (
       <li
         className={
@@ -312,7 +316,7 @@ export class BenchmarkMonitor extends React.Component<
   IMonitorProps,
   IProfilerState
 > {
-  render() {
+  render(): JSX.Element {
     return (
       <div className="up-BenchmarkMonitor">
         <UseSignal
@@ -320,7 +324,12 @@ export class BenchmarkMonitor extends React.Component<
           initialArgs={{ percentage: -1 }}
         >
           {(sender, args) => {
-            if (args!.percentage === 0) {
+            if (!args) {
+              args = {
+                percentage: -1
+              };
+            }
+            if (args.percentage === 0) {
               this.start = new Date();
             }
             let elapsed = NaN;
@@ -329,9 +338,8 @@ export class BenchmarkMonitor extends React.Component<
             if (this.start) {
               const now = new Date();
               elapsed = now.getTime() - this.start.getTime();
-              remaining =
-                ((100 - args!.percentage) * elapsed) / args!.percentage;
-              status = args!.percentage === 100 ? 'up-mod-completed' : '';
+              remaining = ((100 - args.percentage) * elapsed) / args.percentage;
+              status = args.percentage === 100 ? 'up-mod-completed' : '';
             } else {
               status = 'up-mod-waiting';
             }
@@ -341,7 +349,7 @@ export class BenchmarkMonitor extends React.Component<
                   Elapsed: {formatTime(elapsed)}. Remaining:{' '}
                   {formatTime(remaining)}
                 </div>
-                <ProgressBar percentage={args!.percentage} />
+                <ProgressBar percentage={args.percentage} />
               </div>
             );
           }}
@@ -420,23 +428,31 @@ export class BenchmarkLauncher extends React.Component<
     // TODO: open templated notebook for analysis of results
   }
 
-  onBenchmarkChanged(event: React.ChangeEvent<HTMLInputElement>) {
+  onBenchmarkChanged(event: React.ChangeEvent<HTMLInputElement>): void {
+    const matched = this.props.benchmarks.find(
+      benchmark => benchmark.id === event.target.value
+    );
+    if (!matched) {
+      throw Error(`Benchmark not matched ${event.target.value}`);
+    }
     this.setState({
-      benchmark: this.props.benchmarks.find(
-        benchmark => benchmark.id === event.target.value
-      )!
+      benchmark: matched
     });
   }
 
-  onScenarioChanged(event: React.ChangeEvent<HTMLInputElement>) {
+  onScenarioChanged(event: React.ChangeEvent<HTMLInputElement>): void {
+    const matched = this.props.scenarios.find(
+      scenario => scenario.id === event.target.value
+    );
+    if (!matched) {
+      throw Error(`Scenario not matched ${event.target.value}`);
+    }
     this.setState({
-      scenario: this.props.scenarios.find(
-        scenario => scenario.id === event.target.value
-      )!
+      scenario: matched
     });
   }
 
-  render() {
+  render(): JSX.Element {
     const benchmarks = this.props.benchmarks.map(benchmark => {
       return (
         <label key={benchmark.id}>
