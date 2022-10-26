@@ -12,15 +12,18 @@ import {
   BasicMouseHandler,
   BasicSelectionModel
 } from '@lumino/datagrid';
-import { Widget } from '@lumino/widgets';
-import { Signal } from '@lumino/signaling';
+import { Signal, ISignal } from '@lumino/signaling';
 import { IBenchmark, IOutcome, IScenario, IProgress } from './benchmark';
-import { IRuleData } from './styleBenchmarks';
+import { IRuleData } from './css';
+import { formatTime } from './utils';
+import { IRuleBlockResult } from './styleBenchmarks';
 import {
   CustomTemplateFactory,
   CustomArrayTemplateFactory,
   CustomObjectTemplateFactory
 } from './templates';
+import { Statistic } from './statistics';
+import { LuminoWidget } from './lumino';
 
 interface IProfilerProps {
   benchmarks: IBenchmark[];
@@ -63,38 +66,17 @@ interface IValue {
   benchmark: JSONObject;
 }
 
-interface ILuminoWidget {
-  widget: Widget;
-}
-
-const LuminoWidget = (props: ILuminoWidget) => {
-  const ref = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    const widget = props.widget;
-    //
-    Widget.attach(widget, ref.current!);
-    return () => {
-      Widget.detach(widget);
-    };
-  }, [props.widget]);
-
-  React.useLayoutEffect(() => {
-    function updateSize() {
-      props.widget.fit();
-    }
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  return <div ref={ref}></div>;
-};
-
 export class ResultTable extends DataGrid {
   constructor(outcome: IOutcome) {
     super();
     const results = outcome.results;
     for (const result of results) {
       result['min'] = Math.min(...result.times);
+      result['mean'] = Statistic.round(Statistic.mean(result.times), 1);
+      result['IQM'] = Statistic.round(
+        Statistic.interQuartileMean(result.times),
+        1
+      );
       if (result.source) {
         result['source'] = result['source'].replace('webpack://./', '');
       }
@@ -109,7 +91,7 @@ export class ResultTable extends DataGrid {
     const first = results[0];
     const fieldNames = Object.keys(first);
     this.dataModel = new JSONModel({
-      data: results.sort((a, b) => a.min - b.min),
+      data: results.sort((a, b) => a.IQM - b.IQM),
       schema: {
         fields: fieldNames.map(key => {
           return {
@@ -141,22 +123,37 @@ export class ResultTable extends DataGrid {
   }
 }
 
+export function renderBlockResult(props: {
+  outcome: IOutcome<IRuleBlockResult>;
+}) {
+  const result = props.outcome.results;
+  result.map(result => {
+    result.rulesInBlock;
+  });
+  return <div>test</div>;
+}
+
 export class UIProfiler extends ReactWidget {
   constructor(private props: IProfilerProps) {
     super();
-    // results DB?
-    // this.results =
     this.progress = new Signal(this);
     this.handleResult = this.handleResult.bind(this);
+    this.loadResult = this.loadResult.bind(this);
+    this.manager = new ServiceManager();
+    this.resultAdded = new Signal(this);
   }
   handleResult(result: IBenchmarkResult) {
     this.result = result;
     this.update();
+    this.resultAdded.emit(result);
   }
-  render() {
-    // TODO add BenchmarkMonitor displaying progress, performance metrics etc
-    // TODO add BenchmarkHistory showing a list of most recent results
 
+  async loadResult(file: Contents.IModel) {
+    file = await this.manager.contents.get(file.path);
+    this.handleResult(JSON.parse(file.content));
+  }
+
+  render() {
     return (
       <div className="up-UIProfiler">
         <BenchmarkLauncher
@@ -165,21 +162,150 @@ export class UIProfiler extends ReactWidget {
           {...this.props}
         />
         <BenchmarkMonitor progress={this.progress} {...this.props} />
-        {this.result ? (
-          <div>
-            Results for {this.result.benchmark} {this.result.scenario}.
-            Reference:{' '}
-            {this.result.result.reference.map(time => time + 'ms').join(', ')}
-            <LuminoWidget widget={new ResultTable(this.result.result)} />
-          </div>
-        ) : null}
+        <BenchmarkHistory
+          resultAdded={this.resultAdded}
+          manager={this.manager}
+          onSelect={this.loadResult}
+          {...this.props}
+        />
+        <BenchmarkResult result={this.result} {...this.props} />
       </div>
     );
   }
 
   progress: Signal<any, IProgress>;
+  resultAdded: Signal<any, IBenchmarkResult>;
   result: IBenchmarkResult | null = null;
-  //manager: ServiceManager;
+  manager: ServiceManager;
+}
+
+interface IHistoryProps {
+  manager: ServiceManager;
+  onSelect: (file: Contents.IModel) => void;
+  resultAdded: ISignal<any, IBenchmarkResult>;
+}
+
+import { ServiceManager } from '@jupyterlab/services';
+
+interface IHistoryState {
+  files: Contents.IModel[];
+  current: string | null;
+}
+
+export class BenchmarkHistory extends React.Component<
+  IHistoryProps,
+  IHistoryState
+> {
+  constructor(props: IHistoryProps) {
+    super(props);
+    this.state = {
+      files: [],
+      current: null
+    };
+    this.update();
+    this.update = this.update.bind(this);
+    this.props.resultAdded.connect(async (result: IBenchmarkResult) => {
+      await this.update();
+      this.setState({
+        current: benchmarkFilename(result)
+      });
+      console.log(this.state);
+    });
+  }
+
+  async update() {
+    const dirModel = await this.props.manager.contents.get('.');
+    this.setState({
+      files: dirModel.content.filter((a: Contents.IModel) =>
+        a.path.endsWith('.profile.json')
+      )
+    });
+  }
+
+  componentDidMount() {
+    this._handle = window.setInterval(this.update, 2000);
+  }
+
+  componentWillUnmount() {
+    if (this._handle !== null) {
+      window.clearInterval(this._handle);
+    }
+  }
+
+  render() {
+    const list = this.state.files.map(file => (
+      <li
+        className={
+          this.state.current === file.path
+            ? 'up-BenchmarkHistory-file up-BenchmarkHistory-file-active'
+            : 'up-BenchmarkHistory-file'
+        }
+        onClick={() => {
+          this.props.onSelect(file);
+          this.setState({
+            current: file.path
+          });
+        }}
+      >
+        {file.name.replace('.profile.json', '')}
+      </li>
+    ));
+    return (
+      <div className="up-BenchmarkHistory">
+        <h3 className="up-widget-heading">History</h3>
+        <ul className="up-BenchmarkHistory-files">{list}</ul>
+      </div>
+    );
+  }
+
+  private _handle: number | null = null;
+}
+
+interface IResultProps {
+  result: IBenchmarkResult | null;
+  benchmarks: IBenchmark[];
+  scenarios: IScenario[];
+}
+
+export class BenchmarkResult extends React.Component<IResultProps> {
+  render() {
+    const { result, benchmarks, scenarios } = this.props;
+    const wrap = (el: JSX.Element) => (
+      <div className="up-BenchmarkResult">{el}</div>
+    );
+    if (!result) {
+      return wrap(
+        <div>
+          No result yet (choose one from the panel, or run a new benchmark)
+        </div>
+      );
+    }
+    const scenario = scenarios.find(
+      candidate => candidate.id === result.scenario
+    );
+    const benchmark = benchmarks.find(
+      candidate => candidate.id === result.benchmark
+    );
+    if (!scenario) {
+      return wrap(<div>Unknown scenario: {result.scenario}</div>);
+    }
+    if (!benchmark) {
+      return wrap(<div>Unknown benchmark: {result.benchmark}</div>);
+    }
+    return wrap(
+      <div>
+        Results for {benchmark.name} {scenario.name}. Reference: IQM:{' '}
+        {Statistic.round(
+          Statistic.interQuartileMean(result.result.reference),
+          1
+        )}{' '}
+        ms, mean: {Statistic.round(Statistic.mean(result.result.reference), 1)}{' '}
+        ms, min: {Statistic.min(result.result.reference)} ms
+        {benchmark.render ? <benchmark.render outcome={result.result} /> : null}
+        <LuminoWidget widget={new ResultTable(result.result)} />
+      </div>
+    );
+  }
 }
 
 export class BenchmarkMonitor extends React.Component<
@@ -199,20 +325,24 @@ export class BenchmarkMonitor extends React.Component<
             }
             let elapsed = NaN;
             let remaining = NaN;
+            let status: string;
             if (this.start) {
               const now = new Date();
               elapsed = now.getTime() - this.start.getTime();
               remaining =
                 ((100 - args!.percentage) * elapsed) / args!.percentage;
+              status = args!.percentage === 100 ? 'up-mod-completed' : '';
+            } else {
+              status = 'up-mod-waiting';
             }
             return (
-              <>
+              <div className={status + ' up-BenchmarkMonitor-content'}>
                 <div>
                   Elapsed: {formatTime(elapsed)}. Remaining:{' '}
                   {formatTime(remaining)}
                 </div>
                 <ProgressBar percentage={args!.percentage} />
-              </>
+              </div>
             );
           }}
         </UseSignal>
@@ -220,25 +350,6 @@ export class BenchmarkMonitor extends React.Component<
     );
   }
   start: Date | null = null;
-}
-
-function formatTime(miliseconds: number): string {
-  if (isNaN(miliseconds)) {
-    return '-';
-  }
-  const seconds = miliseconds / 1000;
-  const minutes = Math.floor(seconds / 60);
-  let formatted = Math.round(seconds - minutes * 60) + ' seconds';
-  if (minutes < 1) {
-    return formatted;
-  }
-  const hours = Math.floor(minutes / 60);
-  formatted = Math.round(minutes - hours * 60) + ' minutes ' + formatted;
-  if (hours < 1) {
-    return formatted;
-  }
-  formatted = Math.round(hours) + ' hours ' + formatted;
-  return formatted;
 }
 
 interface IBenchmarkResult {
@@ -253,6 +364,14 @@ interface IBenchmarkResult {
     width: number;
     height: number;
   };
+}
+
+function benchmarkFilename(result: IBenchmarkResult): string {
+  return (
+    [result.benchmark, result.scenario, result.completed.toISOString()].join(
+      '_'
+    ) + '.profile.json'
+  );
 }
 
 export class BenchmarkLauncher extends React.Component<
@@ -298,7 +417,7 @@ export class BenchmarkLauncher extends React.Component<
         height: window.innerHeight
       }
     };
-    // TODO: save the result to file, open templated notebook for analysis/display results
+    // TODO: open templated notebook for analysis of results
   }
 
   onBenchmarkChanged(event: React.ChangeEvent<HTMLInputElement>) {
@@ -324,6 +443,7 @@ export class BenchmarkLauncher extends React.Component<
           <input
             type="radio"
             checked={this.state.benchmark === benchmark}
+            className="up-BenchmarkLauncher-choice-input"
             value={benchmark.id}
           />
           {benchmark.name}
@@ -336,6 +456,7 @@ export class BenchmarkLauncher extends React.Component<
           <input
             type="radio"
             checked={this.state.scenario === scenario}
+            className="up-BenchmarkLauncher-choice-input"
             value={scenario.id}
           />
           {scenario.name}
@@ -346,58 +467,66 @@ export class BenchmarkLauncher extends React.Component<
     // TODO: custom widget for path selection, FileDialog.getOpenFiles
     return (
       <div className="up-BenchmarkLauncher">
-        <div>
-          <h3>Benchmark</h3>
-          <div onChange={this.onBenchmarkChanged.bind(this)}>{benchmarks}</div>
-          <Form
-            schema={this.state.benchmark.configSchema}
-            idPrefix={'ui-profiler-benchmark'}
-            onChange={form => {
-              this._value.benchmark = form.formData as JSONObject;
-            }}
-            FieldTemplate={this.state.fieldTemplate}
-            ArrayFieldTemplate={this.state.arrayFieldTemplate}
-            ObjectFieldTemplate={this.state.objectFieldTemplate}
-            liveValidate
-          />
-        </div>
-        <div>
-          <h3>Scenario</h3>
-          <div onChange={this.onScenarioChanged.bind(this)}>{scenarios}</div>
-          <Form
-            schema={this.state.scenario.configSchema}
-            idPrefix={'ui-profiler-scenario'}
-            onChange={form => {
-              this._value.scenario = form.formData as JSONObject;
-            }}
-            FieldTemplate={this.state.fieldTemplate}
-            ArrayFieldTemplate={this.state.arrayFieldTemplate}
-            ObjectFieldTemplate={this.state.objectFieldTemplate}
-            liveValidate
-          />
-        </div>
-        <div>
-          <h3>Run</h3>
-          <button
-            onClick={async () => {
-              const result = await this.runBenchmark();
-              const filename =
-                [
-                  result.benchmark,
-                  result.scenario,
-                  result.completed.toISOString()
-                ].join('_') + '.profile.json';
-              this.props.upload(
-                new File(JSON.stringify(result).split('\n'), filename, {
-                  type: 'application/json'
-                })
-              );
-              this.props.onResult(result);
-            }}
-            className={'jp-mod-styled jp-mod-accept'}
-          >
-            Start
-          </button>
+        <h3 className="up-widget-heading">Launch</h3>
+        <div className="up-BenchmarkLauncher-cards">
+          <div className="up-BenchmarkLauncher-card">
+            <h4 className="up-card-heading">Benchmark</h4>
+            <div
+              className="up-BenchmarkLauncher-choices"
+              onChange={this.onBenchmarkChanged.bind(this)}
+            >
+              {benchmarks}
+            </div>
+            <Form
+              schema={this.state.benchmark.configSchema}
+              idPrefix={'up-profiler-benchmark'}
+              onChange={form => {
+                this._value.benchmark = form.formData as JSONObject;
+              }}
+              FieldTemplate={this.state.fieldTemplate}
+              ArrayFieldTemplate={this.state.arrayFieldTemplate}
+              ObjectFieldTemplate={this.state.objectFieldTemplate}
+              liveValidate
+            />
+          </div>
+          <div className="up-BenchmarkLauncher-card">
+            <h4 className="up-card-heading">Scenario</h4>
+            <div
+              className="up-BenchmarkLauncher-choices"
+              onChange={this.onScenarioChanged.bind(this)}
+            >
+              {scenarios}
+            </div>
+            <Form
+              schema={this.state.scenario.configSchema}
+              idPrefix={'up-profiler-scenario'}
+              onChange={form => {
+                this._value.scenario = form.formData as JSONObject;
+              }}
+              FieldTemplate={this.state.fieldTemplate}
+              ArrayFieldTemplate={this.state.arrayFieldTemplate}
+              ObjectFieldTemplate={this.state.objectFieldTemplate}
+              liveValidate
+            />
+          </div>
+          <div className="up-BenchmarkLauncher-card">
+            <h4 className="up-card-heading">Run</h4>
+            <button
+              onClick={async () => {
+                const result = await this.runBenchmark();
+                const filename = benchmarkFilename(result);
+                this.props.upload(
+                  new File(JSON.stringify(result).split('\n'), filename, {
+                    type: 'application/json'
+                  })
+                );
+                this.props.onResult(result);
+              }}
+              className={'jp-mod-styled jp-mod-accept'}
+            >
+              Start
+            </button>
+          </div>
         </div>
       </div>
     );

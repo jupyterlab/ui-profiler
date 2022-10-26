@@ -20,6 +20,7 @@ import {
   SwitchTabScenario,
   SwitchTabFocusScenario
 } from './scenarios';
+import { IBenchmark } from './benchmark';
 
 namespace CommandIDs {
   // export const findUnusedStyles = 'ui-profiler:find-unused-styles';
@@ -45,7 +46,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         styleSheetsBenchmark,
         styleRuleBenchmark,
         styleRuleGroupBenchmark
-      ],
+      ] as IBenchmark[],
       scenarios: [
         new MenuOpenScenario(app),
         new MenuSwitchScenario(app),

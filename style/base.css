@@ -5,18 +5,44 @@
 */
 .up-UIProfiler {
   height: 100%;
-  overflow: auto;
-  padding: 8px;
+  overflow: hidden;
   color: var(--jp-content-font-color1);
   font-size: var(--jp-ui-font-size1);
+  display: grid;
+  grid-template:
+    'launcher launcher'
+    'monitor monitor'
+    'history result';
+  grid-template-columns: min-content 1fr;
+  grid-template-rows: minmax(300px, 40%) min-content 1fr;
 }
 
 .up-BenchmarkLauncher {
   padding: 8px;
+  grid-area: launcher;
+  overflow: hidden;
 }
 
-.up-BenchmarkLauncher .jp-FormGroup-fieldLabel {
-  font-weight: normal;
+.up-BenchmarkLauncher-cards {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr;
+  overflow: hidden;
+  height: 100%;
+}
+
+.up-BenchmarkLauncher-card {
+  border-right: 1px solid var(--jp-layout-color2);
+  overflow: hidden;
+  padding: 8px;
+}
+
+.up-BenchmarkLauncher-card:last-child {
+  border-right: 0;
+}
+
+.up-BenchmarkLauncher-card .rjsf {
+  overflow: auto;
+  height: 100%;
 }
 
 .up-BenchmarkLauncher .array-item button {
@@ -28,24 +54,104 @@
 }
 
 .up-BenchmarkLauncher fieldset {
-  border: 1px solid var(--jp-border-color2);
-  border-radius: 4px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.up-BenchmarkLauncher fieldset legend {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.up-BenchmarkLauncher-choice-input:first-child {
+  margin-left: 0;
+}
+
+.up-BenchmarkLauncher .jp-FormGroup-fieldLabel {
+  font-weight: normal;
+  margin: 0;
+  font-size: var(--jp-ui-font-size1);
 }
 
 .up-BenchmarkLauncher fieldset input,
 .up-BenchmarkLauncher fieldset select {
-  font-size: var(--jp-content-font-size2);
+  font-size: var(--jp-content-font-size1);
   border-color: var(--jp-input-border-color);
   border-style: solid;
-  border-radius: 5px;
+  border-radius: 4px;
   border-width: 1px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   background: none;
   color: var(--jp-content-font-color0);
   height: inherit;
 }
 
+.up-BenchmarkLauncher-choices {
+  margin-bottom: 8px;
+}
+
 .up-BenchmarkMonitor .jp-Statusbar-ProgressBar-progress-bar {
+  width: 100%;
+}
+
+.up-BenchmarkResult {
+  padding: 8px;
+  grid-area: result;
+  border-top: var(--jp-border-width) solid var(--jp-border-color1);
+}
+
+.up-BenchmarkHistory {
+  grid-area: history;
+  background-color: var(--jp-layout-color2);
+  border-right: var(--jp-border-width) solid var(--jp-border-color1);
+}
+
+.up-BenchmarkHistory-files {
+  list-style-type: none;
+  margin: 0;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.up-BenchmarkHistory-file {
+  padding: 4px 8px;
+  border-right: 5px solid transparent;
+}
+
+.up-BenchmarkHistory-file:hover {
+  background: var(--jp-layout-color1);
+}
+
+.up-BenchmarkHistory-file-active {
+  border-color: var(--jp-brand-color1);
+}
+
+.up-BenchmarkMonitor {
+  grid-area: monitor;
+  padding: 8px;
   width: 85%;
   margin: auto;
+}
+
+.up-widget-heading {
+  margin: 4px 8px;
+  display: none;
+}
+
+.up-card-heading {
+  margin: 0 4px;
+}
+
+.up-mod-completed .jp-Statusbar-ProgressBar-progress-bar > div {
+  background: var(--jp-accent-color2);
+}
+
+.up-mod-completed .jp-Statusbar-ProgressBar-progress-bar {
+  border-color: var(--jp-accent-color1);
+}
+
+.up-BenchmarkMonitor-content.up-mod-waiting {
+  display: none;
 }

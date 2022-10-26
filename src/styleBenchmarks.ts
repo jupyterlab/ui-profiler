@@ -8,6 +8,8 @@ import {
   benchmark
 } from './benchmark';
 import { layoutReady, reportTagCounts, shuffled } from './utils';
+import { IRuleDescription, extractSourceMap, collectRules } from './css';
+import { renderBlockResult } from './ui';
 
 import benchmarkOptionsSchema from './schema/benchmark-base.json';
 import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';
@@ -23,29 +25,11 @@ interface IStylesheetResult extends IResult {
   stylesheetIndex: number;
 }
 
-interface IRuleDescription {
-  selector: string;
-  source: string | null;
-  ruleIndex: number;
-  stylesheetIndex: number;
-}
-
-export interface IRuleData extends IRuleDescription {
-  /**
-   * The CSS style rule itself.
-   */
-  rule: CSSStyleRule;
-  /**
-   * Parent sheet of the rule.
-   */
-  sheet: CSSStyleSheet;
-}
-
 interface IRuleResult extends IResult, IRuleDescription {
   // no-op
 }
 
-interface IRuleBlock extends IResult {
+export interface IRuleBlockResult extends IResult {
   /**
    * What rules landed in this block?
    */
@@ -185,7 +169,7 @@ export const styleRuleBenchmark: IBenchmark = {
   }
 };
 
-export const styleRuleGroupBenchmark: IBenchmark = {
+export const styleRuleGroupBenchmark: IBenchmark<IRuleBlockResult> = {
   id: 'style-rule-group',
   name: 'Style Rule Group Benchmark',
   configSchema: benchmarkRuleGroupOptionsSchema as JSONSchema7,
@@ -193,7 +177,7 @@ export const styleRuleGroupBenchmark: IBenchmark = {
     scenario: IScenario,
     options: StyleRuleGroupBenchmarkOptions = {},
     progress
-  ): Promise<IOutcome<IRuleBlock>> => {
+  ): Promise<IOutcome<IRuleBlockResult>> => {
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
@@ -207,7 +191,7 @@ export const styleRuleGroupBenchmark: IBenchmark = {
     }
     const reference = await benchmark(scenario, n, true);
     console.log('Reference for', scenario.name, 'is:', reference);
-    const results: IRuleBlock[] = [];
+    const results: IRuleBlockResult[] = [];
     const randomizations = options.sheetRandomizations || 0;
     let step = 0;
     const total = (maxBlocks - minBlocks + 1) * (randomizations + 1);
@@ -273,90 +257,6 @@ export const styleRuleGroupBenchmark: IBenchmark = {
       tags: reportTagCounts(),
       totalTime: Date.now() - start
     };
-  }
+  },
+  render: renderBlockResult
 };
-
-/**
- * Parsed source map, see https://sourcemaps.info/spec.html
- */
-interface ISourceMap {
-  version: number;
-  file?: string;
-  sourceRoot?: string;
-  sources: string[];
-  sourcesContent?: (string | null)[];
-  names: string[];
-  mappings: string[];
-}
-
-/**
- * Extract CSS source map from CSS text content.
- *
- * Note: if URL is embedded, fetch method will be used to retrive the JSON contents.
- */
-async function extractSourceMap(
-  cssContent: string | null
-): Promise<ISourceMap | null> {
-  if (!cssContent) {
-    return null;
-  }
-  const matches = cssContent.matchAll(
-    new RegExp('# sourceMappingURL=(.*)\\s*\\*/', 'g')
-  );
-  if (!matches) {
-    return null;
-  }
-  let url = '';
-  for (const match of matches) {
-    const parts = match[1].split('data:application/json;base64,');
-    if (parts.length > 1) {
-      return JSON.parse(atob(parts[1]));
-    } else {
-      url = match[1];
-    }
-  }
-  if (url === '') {
-    return null;
-  }
-  const response = await fetch(url);
-  return response.json();
-}
-
-async function collectRules(
-  styles: HTMLStyleElement[],
-  options: { skipPattern?: RegExp }
-): Promise<IRuleData[]> {
-  let j = 0;
-  const allRules: IRuleData[] = [];
-  for (const style of styles) {
-    const sheet = style.sheet;
-    if (!sheet) {
-      continue;
-    }
-    const cssMap = await extractSourceMap(style.textContent);
-    const sourceName = cssMap ? cssMap.sources[0] : null;
-    j++;
-    const rules = sheet.rules;
-    for (let i = 0; i < rules.length; i++) {
-      const rule = rules[i];
-      if (!(rule instanceof CSSStyleRule)) {
-        continue;
-      }
-      if (
-        options.skipPattern &&
-        rule.selectorText.match(options.skipPattern) != null
-      ) {
-        continue;
-      }
-      allRules.push({
-        rule: rule,
-        selector: rule.selectorText,
-        sheet: sheet,
-        source: sourceName,
-        ruleIndex: i,
-        stylesheetIndex: j
-      });
-    }
-  }
-  return allRules;
-}

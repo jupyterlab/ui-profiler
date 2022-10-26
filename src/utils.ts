@@ -75,3 +75,22 @@ export function reportTagCounts(): Record<string, number> {
     li: document.querySelectorAll('li').length
   };
 }
+
+export function formatTime(miliseconds: number): string {
+  if (isNaN(miliseconds)) {
+    return '-';
+  }
+  const seconds = miliseconds / 1000;
+  const minutes = Math.floor(seconds / 60);
+  let formatted = Math.round(seconds - minutes * 60) + ' seconds';
+  if (minutes < 1) {
+    return formatted;
+  }
+  const hours = Math.floor(minutes / 60);
+  formatted = Math.round(minutes - hours * 60) + ' minutes ' + formatted;
+  if (hours < 1) {
+    return formatted;
+  }
+  formatted = Math.round(hours) + ' hours ' + formatted;
+  return formatted;
+}

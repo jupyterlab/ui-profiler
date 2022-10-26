@@ -20,15 +20,16 @@ export interface IProgress {
   percentage: number;
 }
 
-export interface IBenchmark {
+export interface IBenchmark<T = IResult> {
   id: string;
   name: string;
   run: (
     scenario: IScenario,
     options: any,
     progress?: Signal<any, IProgress>
-  ) => Promise<IOutcome>;
+  ) => Promise<IOutcome<T>>;
   configSchema: JSONSchema7;
+  render?: (props: { outcome: IOutcome<T> }) => JSX.Element;
 }
 
 export interface IResult {
