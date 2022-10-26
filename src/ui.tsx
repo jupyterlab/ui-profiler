@@ -13,8 +13,14 @@ import {
   BasicSelectionModel
 } from '@lumino/datagrid';
 import { Signal, ISignal } from '@lumino/signaling';
-import { IBenchmark, IOutcome, IScenario, IProgress } from './benchmark';
-import { IRuleData } from './css';
+import {
+  IBenchmark,
+  IOutcome,
+  IResult,
+  IScenario,
+  IProgress
+} from './benchmark';
+import { IRuleDescription } from './css';
 import { formatTime } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
 import {
@@ -67,10 +73,15 @@ interface IValue {
 }
 
 export class ResultTable extends DataGrid {
-  constructor(outcome: IOutcome) {
+  constructor(outcome: IResult[]) {
     super();
-    const results = outcome.results;
-    for (const result of results) {
+    const results = outcome.map(result => {
+      // Make a copy
+      result = { ...result };
+      // https://github.com/jupyterlab/lumino/issues/448
+      if (result['content']) {
+        result['content'] = result['content'].substring(0, 500);
+      }
       result['min'] = Math.min(...result.times);
       result['mean'] = Statistic.round(Statistic.mean(result.times), 1);
       result['IQM'] = Statistic.round(
@@ -81,13 +92,14 @@ export class ResultTable extends DataGrid {
         result['source'] = result['source'].replace('webpack://./', '');
       }
       if (result['rulesInBlock']) {
-        result['rulesInBlock'] = (result['rulesInBlock'] as IRuleData[]).map(
-          rule => {
-            return rule.rule.selectorText;
-          }
-        );
+        result['rulesInBlock'] = (
+          result['rulesInBlock'] as IRuleDescription[]
+        ).map(rule => {
+          return rule.selector;
+        });
       }
-    }
+      return result;
+    });
     const first = results[0];
     const fieldNames = Object.keys(first);
     this.dataModel = new JSONModel({
@@ -112,7 +124,8 @@ export class ResultTable extends DataGrid {
       source: 425,
       content: 100,
       selector: 175,
-      rulesInBlock: 500
+      rulesInBlock: 500,
+      IQM: 45
     };
     for (const [name, size] of Object.entries(columnWidths)) {
       const index = fieldNames.indexOf(name);
@@ -126,11 +139,57 @@ export class ResultTable extends DataGrid {
 export function renderBlockResult(props: {
   outcome: IOutcome<IRuleBlockResult>;
 }) {
-  const result = props.outcome.results;
-  result.map(result => {
-    result.rulesInBlock;
-  });
-  return <div>test</div>;
+  const results = props.outcome.results;
+  const [display, setDisplay] = React.useState('block');
+  // Cache the blocks table.
+  const blocksWidget = React.useRef<ResultTable | null>(null);
+  if (blocksWidget.current === null) {
+    blocksWidget.current = new ResultTable(results);
+  }
+  // Cache the rules table.
+  const rulesWidget = React.useRef<ResultTable | null>(null);
+  if (rulesWidget.current === null) {
+    const ruleResults: Record<string, IResult> = {};
+    for (const block of results) {
+      for (const rule of block.rulesInBlock) {
+        if (rule.selector in ruleResults) {
+          ruleResults[rule.selector].times.push(...block.times);
+        } else {
+          const entry = {
+            ...rule,
+            times: [...block.times]
+          };
+          delete (entry as any).sheet;
+          delete (entry as any).rule;
+          ruleResults[rule.selector] = entry;
+        }
+      }
+    }
+    rulesWidget.current = new ResultTable([...Object.values(ruleResults)]);
+  }
+  return (
+    <div>
+      <div
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          setDisplay(event.target.value);
+        }}
+      >
+        <label>
+          <input type="radio" checked={display === 'block'} value="block" />
+          Blocks
+        </label>
+        <label>
+          <input type="radio" checked={display === 'rule'} value="rule" />
+          Rules
+        </label>
+      </div>
+      {display === 'block' ? (
+        <LuminoWidget widget={blocksWidget.current} />
+      ) : (
+        <LuminoWidget widget={rulesWidget.current} />
+      )}
+    </div>
+  );
 }
 
 export class UIProfiler extends ReactWidget {
@@ -161,7 +220,6 @@ export class UIProfiler extends ReactWidget {
           progress={this.progress}
           {...this.props}
         />
-        <BenchmarkMonitor progress={this.progress} {...this.props} />
         <BenchmarkHistory
           resultAdded={this.resultAdded}
           manager={this.manager}
@@ -272,6 +330,9 @@ interface IResultProps {
 }
 
 export class BenchmarkResult extends React.Component<IResultProps> {
+  constructor(props: IResultProps) {
+    super(props);
+  }
   render() {
     const { result, benchmarks, scenarios } = this.props;
     const wrap = (el: JSX.Element) => (
@@ -296,6 +357,9 @@ export class BenchmarkResult extends React.Component<IResultProps> {
     if (!benchmark) {
       return wrap(<div>Unknown benchmark: {result.benchmark}</div>);
     }
+    if (!benchmark.render && this._previousResult !== result.id) {
+      this._table = new ResultTable(result.result.results);
+    }
     return wrap(
       <div>
         Results for {benchmark.name} {scenario.name}. Reference: IQM:{' '}
@@ -305,11 +369,16 @@ export class BenchmarkResult extends React.Component<IResultProps> {
         )}{' '}
         ms, mean: {Statistic.round(Statistic.mean(result.result.reference), 1)}{' '}
         ms, min: {Statistic.min(result.result.reference)} ms
-        {benchmark.render ? <benchmark.render outcome={result.result} /> : null}
-        <LuminoWidget widget={new ResultTable(result.result)} />
+        {benchmark.render ? (
+          <benchmark.render outcome={result.result} />
+        ) : (
+          <LuminoWidget widget={this._table!} />
+        )}
       </div>
     );
   }
+  private _table: ResultTable | null = null;
+  private _previousResult: string | null = null;
 }
 
 export class BenchmarkMonitor extends React.Component<
@@ -372,14 +441,18 @@ interface IBenchmarkResult {
     width: number;
     height: number;
   };
+  id: string;
 }
 
+function benchmarkId(result: Omit<IBenchmarkResult, 'id'>): string {
+  return [
+    result.benchmark,
+    result.scenario,
+    result.completed.toISOString()
+  ].join('_');
+}
 function benchmarkFilename(result: IBenchmarkResult): string {
-  return (
-    [result.benchmark, result.scenario, result.completed.toISOString()].join(
-      '_'
-    ) + '.profile.json'
-  );
+  return result.id + '.profile.json';
 }
 
 export class BenchmarkLauncher extends React.Component<
@@ -412,7 +485,7 @@ export class BenchmarkLauncher extends React.Component<
       this.props.progress
     );
     this.props.progress.emit({ percentage: 100 });
-    return {
+    const data: Omit<IBenchmarkResult, 'id'> = {
       result: result,
       options: options,
       benchmark: benchmark.id,
@@ -424,6 +497,10 @@ export class BenchmarkLauncher extends React.Component<
         width: window.innerWidth,
         height: window.innerHeight
       }
+    };
+    return {
+      ...data,
+      id: benchmarkId(data)
     };
     // TODO: open templated notebook for analysis of results
   }
@@ -482,7 +559,7 @@ export class BenchmarkLauncher extends React.Component<
     // TODO: stop button
     // TODO: custom widget for path selection, FileDialog.getOpenFiles
     return (
-      <div className="up-BenchmarkLauncher">
+      <div className="up-BenchmarkLauncher" style={{ height: '450px' }}>
         <h3 className="up-widget-heading">Launch</h3>
         <div className="up-BenchmarkLauncher-cards">
           <div className="up-BenchmarkLauncher-card">
@@ -544,6 +621,7 @@ export class BenchmarkLauncher extends React.Component<
             </button>
           </div>
         </div>
+        <BenchmarkMonitor {...this.props} />
       </div>
     );
   }

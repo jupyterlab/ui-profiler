@@ -11,16 +11,17 @@
   display: grid;
   grid-template:
     'launcher launcher'
-    'monitor monitor'
     'history result';
   grid-template-columns: min-content 1fr;
-  grid-template-rows: minmax(300px, 40%) min-content 1fr;
+  grid-template-rows: 0fr 1fr;
 }
 
 .up-BenchmarkLauncher {
   padding: 8px;
   grid-area: launcher;
   overflow: hidden;
+  resize: vertical;
+  min-height: 100px;
 }
 
 .up-BenchmarkLauncher-cards {
@@ -132,10 +133,11 @@
 }
 
 .up-BenchmarkMonitor {
-  grid-area: monitor;
+  position: sticky;
   padding: 8px;
   width: 85%;
   margin: auto;
+  bottom: 0;
 }
 
 .up-widget-heading {
