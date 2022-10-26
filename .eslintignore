@@ -2,6 +2,7 @@ node_modules
 dist
 coverage
 **/*.d.ts
+**/_*.ts
 tests
 
 **/__tests__

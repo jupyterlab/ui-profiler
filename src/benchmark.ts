@@ -1,4 +1,5 @@
 import { JSONSchema7 } from 'json-schema';
+import type { Signal } from '@lumino/signaling';
 
 export interface IScenario {
   id: string;
@@ -15,15 +16,24 @@ export interface IScenario {
   setOptions: (options: any) => void;
 }
 
+export interface IProgress {
+  percentage: number;
+}
+
 export interface IBenchmark {
   id: string;
   name: string;
-  run: (scenario: IScenario, options: any) => Promise<IOutcome>;
+  run: (
+    scenario: IScenario,
+    options: any,
+    progress?: Signal<any, IProgress>
+  ) => Promise<IOutcome>;
   configSchema: JSONSchema7;
 }
 
 export interface IResult {
   times: number[];
+  [index: string]: any;
 }
 
 export interface IOutcome<T = IResult> {

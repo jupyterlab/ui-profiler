@@ -11,7 +11,7 @@
     "skipPattern": {
       "title": "Regular expression to filter out rules",
       "type": "string",
-      "default": "(fa-|Icon|mod-hidden)"
+      "default": "(fa-|Icon|bp3|mod-hidden)"
     },
     "minBlocks": {
       "title": "Block size to start with",

@@ -1,0 +1,13 @@
+{
+  "title": "Menu Open Scenario Options",
+  "type": "object",
+  "properties": {
+    "menu": {
+      "title": "The menu to open",
+      "type": "string",
+      "default": "file",
+      "enum": ["file", "edit", "view", "run", "kernel", "settings", "help"]
+    }
+  },
+  "required": ["menu"]
+}

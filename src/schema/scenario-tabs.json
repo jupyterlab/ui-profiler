@@ -8,20 +8,41 @@
       "default": {
         "type": "launcher"
       },
-      "properties": {
-        "path": {
-          "title": "Path",
-          "description": "Path to the file/notebook to open as a tab",
-          "type": "string"
+      "anyOf": [
+        {
+          "type": "object",
+          "title": "File",
+          "properties": {
+            "path": {
+              "title": "Path",
+              "description": "Path to the file/notebook to open as a tab",
+              "type": "string"
+            },
+            "type": {
+              "title": "Type",
+              "description": "Type of the tab",
+              "type": "string",
+              "enum": ["file"],
+              "default": "file"
+            }
+          },
+          "required": ["type"]
         },
-        "type": {
-          "title": "Type",
-          "description": "Type of the tab",
-          "type": "string",
-          "enum": ["file", "launcher"]
+        {
+          "type": "object",
+          "title": "Launcher",
+          "properties": {
+            "type": {
+              "title": "Type",
+              "description": "Type of the tab",
+              "type": "string",
+              "enum": ["launcher"],
+              "default": "launcher"
+            }
+          },
+          "required": ["type"]
         }
-      },
-      "required": "type"
+      ]
     }
   },
   "properties": {

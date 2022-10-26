@@ -72,7 +72,8 @@ export const styleSheetsBenchmark: IBenchmark = {
   configSchema: benchmarkOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: BenchmarkOptions = {}
+    options: BenchmarkOptions = {},
+    progress
   ): Promise<IOutcome<IStylesheetResult>> => {
     const n = options.repeats || 3;
     const start = Date.now();
@@ -86,6 +87,7 @@ export const styleSheetsBenchmark: IBenchmark = {
     let j = 0;
     for (const style of styles) {
       const sheet = style.sheet;
+      progress?.emit({ percentage: (100 * j) / styles.length });
       if (!sheet) {
         console.log(
           'Skipping style tag without stylesheet',
@@ -114,6 +116,7 @@ export const styleSheetsBenchmark: IBenchmark = {
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
+    progress?.emit({ percentage: 100 });
     return {
       results: results,
       reference: reference,
@@ -129,7 +132,8 @@ export const styleRuleBenchmark: IBenchmark = {
   configSchema: benchmarkRuleOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: StyleRuleBenchmarkOptions = {}
+    options: StyleRuleBenchmarkOptions = {},
+    progress
   ): Promise<IOutcome<IRuleResult>> => {
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
@@ -145,6 +149,8 @@ export const styleRuleBenchmark: IBenchmark = {
     const results: IRuleResult[] = [];
     let j = 0;
     for (const style of styles) {
+      // TODO: more granular progress? (collect rules once for all styles?)
+      progress?.emit({ percentage: (100 * j) / styles.length });
       console.log('Benchmarking stylesheet', j, 'out of', styles.length);
       j++;
       const rules = await collectRules([style], { skipPattern });
@@ -169,6 +175,7 @@ export const styleRuleBenchmark: IBenchmark = {
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
+    progress?.emit({ percentage: 100 });
     return {
       results: results,
       reference: reference,
@@ -184,7 +191,8 @@ export const styleRuleGroupBenchmark: IBenchmark = {
   configSchema: benchmarkRuleGroupOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: StyleRuleGroupBenchmarkOptions = {}
+    options: StyleRuleGroupBenchmarkOptions = {},
+    progress
   ): Promise<IOutcome<IRuleBlock>> => {
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
@@ -201,6 +209,8 @@ export const styleRuleGroupBenchmark: IBenchmark = {
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleBlock[] = [];
     const randomizations = options.sheetRandomizations || 0;
+    let step = 0;
+    const total = (maxBlocks - minBlocks + 1) * (randomizations + 1);
     for (
       let randomization = 0;
       randomization < randomizations + 1;
@@ -215,6 +225,8 @@ export const styleRuleGroupBenchmark: IBenchmark = {
       );
 
       for (let blocks = minBlocks; blocks <= maxBlocks; blocks++) {
+        step += 1;
+        progress?.emit({ percentage: (100 * step) / total });
         const rulesPerBlock = Math.round(allRules.length / blocks);
         console.log(
           `Benchmarking ${blocks} blocks, each having ${rulesPerBlock} rules`
@@ -254,6 +266,7 @@ export const styleRuleGroupBenchmark: IBenchmark = {
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
+    progress?.emit({ percentage: 100 });
     return {
       results: results,
       reference: reference,
@@ -293,7 +306,7 @@ async function extractSourceMap(
   if (!matches) {
     return null;
   }
-  let url: string = '';
+  let url = '';
   for (const match of matches) {
     const parts = match[1].split('data:application/json;base64,');
     if (parts.length > 1) {

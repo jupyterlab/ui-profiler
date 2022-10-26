@@ -8,21 +8,21 @@ import { IScenario } from './benchmark';
 
 import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
 import type { ScenarioOptions } from './types/_scenario-base';
+import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
+import scenarioMenuOpenOptionsSchema from './schema/scenario-menu-open.json';
 import scenarioTabOptionsSchema from './schema/scenario-tabs.json';
 
 async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
   for (const menu of ['edit', 'view', 'run', 'kernel', 'settings', 'help']) {
-    await jupyterApp.commands.execute(`${menu}menu:open`);
-    await waitForElement(`#jp-mainmenu-${menu}`);
-    await layoutReady();
+    await openMainMenu(jupyterApp, menu);
   }
 }
 
-async function openMainMenu(jupyterApp: JupyterFrontEnd) {
-  await jupyterApp.commands.execute('filemenu:open');
-  await waitForElement('#jp-mainmenu-file');
+async function openMainMenu(jupyterApp: JupyterFrontEnd, menu = 'file') {
+  await jupyterApp.commands.execute(`${menu}menu:open`);
+  await waitForElement(`#jp-mainmenu-${menu}`);
   await layoutReady();
 }
 
@@ -56,26 +56,27 @@ export class MenuSwitchScenario implements IScenario {
 
 export class MenuOpenScenario implements IScenario {
   constructor(protected jupyterApp: JupyterFrontEnd) {
-    // no-op
+    this._menu = 'file';
   }
 
-  // TODO: add option to specify which menu to open (currently always file)
-  setOptions(options: ScenarioOptions) {
-    // no-op
+  setOptions(options: MenuOpenScenarioOptions) {
+    this._menu = options.menu;
   }
 
   async run() {
-    return openMainMenu(this.jupyterApp);
+    return openMainMenu(this.jupyterApp, this._menu);
   }
   cleanup = cleanupMenu;
   id = 'menuOpen';
   name = 'Open Menu';
-  configSchema = scenarioOptionsSchema as JSONSchema7;
+  configSchema = scenarioMenuOpenOptionsSchema as JSONSchema7;
+  private _menu: string;
 }
 
 export class SwitchTabScenario implements IScenario {
   id = 'tabSwitch';
   name = 'Switch Tabs';
+  split: 'first' | 'all' = 'first';
   configSchema = scenarioTabOptionsSchema as any as JSONSchema7;
 
   constructor(protected jupyterApp: JupyterFrontEnd) {
@@ -108,6 +109,13 @@ export class SwitchTabScenario implements IScenario {
           throw Error('Unknown tab type');
       }
       await waitForElement('#' + widget.id);
+      if (
+        (this.split === 'first' && this._widgets.length === 0) ||
+        this.split === 'all'
+      ) {
+        this.jupyterApp.shell.add(widget, 'main', { mode: 'split-right' });
+      }
+      await this._activateWidget(widget);
       this._widgets.push(widget);
     }
   }
@@ -117,19 +125,28 @@ export class SwitchTabScenario implements IScenario {
       await waitNoElement(`.lm-Widget[data-id="${widget.id}"]`);
     }
   }
+  private async _activateWidget(widget: MainAreaWidget) {
+    await this.jupyterApp.commands.execute('tabsmenu:activate-by-id', {
+      id: widget.id
+    });
+    await layoutReady();
+    await waitForElement(`li.lm-mod-current[data-id="${widget.id}"]`, true);
+    await layoutReady();
+  }
   async run() {
     if (!this._widgets.length) {
       throw new Error('Suite not set up');
     }
     for (const widget of this._widgets) {
-      await this.jupyterApp.commands.execute('tabsmenu:activate-by-id', {
-        id: widget.id
-      });
-      await layoutReady();
-      await waitForElement(`li.lm-mod-current[data-id="${widget.id}"]`, true);
-      await layoutReady();
+      await this._activateWidget(widget);
     }
   }
   private _tabs: Tab[] = [];
   private _widgets: MainAreaWidget[] = [];
+}
+
+export class SwitchTabFocusScenario extends SwitchTabScenario {
+  id = 'tabSwitchFocus';
+  name = 'Switch Tab Focus';
+  split: 'first' | 'all' = 'all';
 }

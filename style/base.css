@@ -3,3 +3,49 @@
 
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
+.up-UIProfiler {
+  height: 100%;
+  overflow: auto;
+  padding: 8px;
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-ui-font-size1);
+}
+
+.up-BenchmarkLauncher {
+  padding: 8px;
+}
+
+.up-BenchmarkLauncher .jp-FormGroup-fieldLabel {
+  font-weight: normal;
+}
+
+.up-BenchmarkLauncher .array-item button {
+  margin: 2px;
+}
+
+.up-BenchmarkLauncher .btn-info[type='submit'] {
+  display: none;
+}
+
+.up-BenchmarkLauncher fieldset {
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 4px;
+}
+
+.up-BenchmarkLauncher fieldset input,
+.up-BenchmarkLauncher fieldset select {
+  font-size: var(--jp-content-font-size2);
+  border-color: var(--jp-input-border-color);
+  border-style: solid;
+  border-radius: 5px;
+  border-width: 1px;
+  padding: 6px 8px;
+  background: none;
+  color: var(--jp-content-font-color0);
+  height: inherit;
+}
+
+.up-BenchmarkMonitor .jp-Statusbar-ProgressBar-progress-bar {
+  width: 85%;
+  margin: auto;
+}
