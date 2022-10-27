@@ -18,7 +18,8 @@ import {
   MenuOpenScenario,
   MenuSwitchScenario,
   SwitchTabScenario,
-  SwitchTabFocusScenario
+  SwitchTabFocusScenario,
+  SidePanelOpenScenario
 } from './scenarios';
 import { IBenchmark } from './benchmark';
 
@@ -51,7 +52,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         new MenuOpenScenario(app),
         new MenuSwitchScenario(app),
         new SwitchTabScenario(app),
-        new SwitchTabFocusScenario(app)
+        new SwitchTabFocusScenario(app),
+        new SidePanelOpenScenario(app)
       ],
       translator: nullTranslator,
       upload: (file: File) => {

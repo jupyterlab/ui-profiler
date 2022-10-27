@@ -330,9 +330,6 @@ interface IResultProps {
 }
 
 export class BenchmarkResult extends React.Component<IResultProps> {
-  constructor(props: IResultProps) {
-    super(props);
-  }
   render() {
     const { result, benchmarks, scenarios } = this.props;
     const wrap = (el: JSX.Element) => (

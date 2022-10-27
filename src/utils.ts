@@ -1,3 +1,43 @@
+export function waitElementVisible(
+  selector: string,
+  visible = true
+): Promise<Element> {
+  return new Promise(resolve => {
+    const node = document.querySelector(selector);
+
+    if (!node) {
+      throw `No element matching ${selector} is attached`;
+    }
+
+    const conditionSatisfied = (data: { width: number; height: number }) => {
+      return visible
+        ? data.width !== 0 && data.height !== 0
+        : data.width === 0 || data.height === 0;
+    };
+
+    if (conditionSatisfied(node.getBoundingClientRect())) {
+      resolve(node);
+    }
+
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const node = entry.target;
+        const matches = conditionSatisfied(entry.contentRect);
+        if (matches && node instanceof HTMLElement && node.matches(selector)) {
+          resolve(node);
+          observer.disconnect();
+        }
+      }
+    });
+
+    observer.observe(node);
+  });
+}
+
+export function waitElementHidden(selector: string) {
+  return waitElementVisible(selector, false);
+}
+
 export function waitForElement(
   selector: string,
   attributes = false

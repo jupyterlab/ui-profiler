@@ -3,7 +3,13 @@ import type { MainAreaWidget } from '@jupyterlab/apputils';
 
 import { JSONSchema7 } from 'json-schema';
 
-import { waitForElement, layoutReady, waitNoElement } from './utils';
+import {
+  waitForElement,
+  layoutReady,
+  waitNoElement,
+  waitElementHidden,
+  waitElementVisible
+} from './utils';
 import { IScenario } from './benchmark';
 
 import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
@@ -71,6 +77,52 @@ export class MenuOpenScenario implements IScenario {
   name = 'Open Menu';
   configSchema = scenarioMenuOpenOptionsSchema as JSONSchema7;
   private _menu: string;
+}
+
+async function closeSidePanels(jupyterApp: JupyterFrontEnd) {
+  for (const side of ['left', 'right']) {
+    const panel = document.querySelector(`#jp-${side}-stack`);
+    if (panel && !panel.classList.contains('lm-mod-hidden')) {
+      await jupyterApp.commands.execute(`application:toggle-${side}-area`);
+      await waitElementHidden(`#jp-${side}-stack`);
+      await layoutReady();
+    }
+  }
+}
+
+export class SidePanelOpenScenario implements IScenario {
+  constructor(protected jupyterApp: JupyterFrontEnd) {
+    // no-op
+  }
+
+  setOptions(options: ScenarioOptions) {
+    // no-op
+  }
+
+  async setup() {
+    return closeSidePanels(this.jupyterApp);
+  }
+  async run() {
+    // TODO make this configurable (with this list as default)
+    for (const panel of [
+      'table-of-contents',
+      'jp-debugger-sidebar',
+      'jp-property-inspector',
+      'filebrowser',
+      'extensionmanager.main-view',
+      'jp-running-sessions'
+    ]) {
+      // will be possible with commands in 4.0+ https://stackoverflow.com/a/74005349/6646912
+      this.jupyterApp.shell.activateById(panel);
+      await waitElementVisible(`#${CSS.escape(panel)}`);
+      await layoutReady();
+    }
+  }
+  // TOOD restore initially open panel?
+  //cleanup = cleanupMenu;
+  id = 'sidePanelOpen';
+  name = 'Open Side Panel';
+  configSchema = scenarioOptionsSchema as JSONSchema7;
 }
 
 export class SwitchTabScenario implements IScenario {
