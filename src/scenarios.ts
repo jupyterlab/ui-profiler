@@ -3,22 +3,18 @@ import type { MainAreaWidget } from '@jupyterlab/apputils';
 
 import { JSONSchema7 } from 'json-schema';
 
-import {
-  waitForElement,
-  layoutReady,
-  waitNoElement,
-  waitElementHidden,
-  waitElementVisible
-} from './utils';
+import { page, layoutReady, ElementHandle } from './dramaturg';
 import { IScenario } from './benchmark';
 
 import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
 import type { ScenarioOptions } from './types/_scenario-base';
 import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
+import type { CompleterScenarioOptions } from './types/_scenario-completer';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
 import scenarioMenuOpenOptionsSchema from './schema/scenario-menu-open.json';
 import scenarioTabOptionsSchema from './schema/scenario-tabs.json';
+import scenarioCompleterOptionsSchema from './schema/scenario-completer.json';
 
 async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
   for (const menu of ['edit', 'view', 'run', 'kernel', 'settings', 'help']) {
@@ -28,14 +24,15 @@ async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
 
 async function openMainMenu(jupyterApp: JupyterFrontEnd, menu = 'file') {
   await jupyterApp.commands.execute(`${menu}menu:open`);
-  await waitForElement(`#jp-mainmenu-${menu}`);
+  await page.waitForSelector(`#jp-mainmenu-${menu}`, { state: 'attached' });
   await layoutReady();
 }
 
 async function cleanupMenu() {
-  const menu = await waitForElement('.lm-Menu');
-  menu.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 27 }));
-  await waitNoElement('.lm-Menu');
+  // ensure menu is open
+  await page.waitForSelector('.lm-Menu', { state: 'attached' });
+  await page.press('Escape');
+  await page.waitForSelector('.lm-Menu', { state: 'detached' });
   await layoutReady();
 }
 
@@ -84,7 +81,7 @@ async function closeSidePanels(jupyterApp: JupyterFrontEnd) {
     const panel = document.querySelector(`#jp-${side}-stack`);
     if (panel && !panel.classList.contains('lm-mod-hidden')) {
       await jupyterApp.commands.execute(`application:toggle-${side}-area`);
-      await waitElementHidden(`#jp-${side}-stack`);
+      await page.waitForSelector(`#jp-${side}-stack`, { state: 'hidden' });
       await layoutReady();
     }
   }
@@ -114,15 +111,146 @@ export class SidePanelOpenScenario implements IScenario {
     ]) {
       // will be possible with commands in 4.0+ https://stackoverflow.com/a/74005349/6646912
       this.jupyterApp.shell.activateById(panel);
-      await waitElementVisible(`#${CSS.escape(panel)}`);
+      await page.waitForSelector(`#${CSS.escape(panel)}`, { state: 'visible' });
       await layoutReady();
     }
   }
-  // TOOD restore initially open panel?
-  //cleanup = cleanupMenu;
+  // TOOD restore initially open panel in cleanup?
   id = 'sidePanelOpen';
   name = 'Open Side Panel';
   configSchema = scenarioOptionsSchema as JSONSchema7;
+}
+
+export function insertText(jupyterApp: JupyterFrontEnd, text: string) {
+  return jupyterApp.commands.execute('apputils:run-first-enabled', {
+    commands: [
+      'notebook:replace-selection',
+      'console:replace-selection',
+      'fileeditor:replace-selection'
+    ],
+    args: {
+      text: text
+    }
+  });
+}
+
+export class CompleterScenario implements IScenario {
+  constructor(protected jupyterApp: JupyterFrontEnd) {
+    // no-op
+  }
+
+  setOptions(options: CompleterScenarioOptions) {
+    this._options = options;
+    this._useNotebook = this._options.editor === 'Notebook';
+  }
+
+  async setupSuite() {
+    if (!this._options) {
+      throw new Error('Options not set for completer scenario.');
+    }
+    if (!this._options.path || this._options.path.length === 0) {
+      const model = await this.jupyterApp.commands.execute(
+        'docmanager:new-untitled',
+        this._useNotebook
+          ? { path: '', type: 'notebook' }
+          : {
+              path: '',
+              type: 'file',
+              ext: 'py'
+            }
+      );
+      this._path = model.path;
+    } else {
+      this._path = this._options.path;
+    }
+    const widget: MainAreaWidget = await this.jupyterApp.commands.execute(
+      'docmanager:open',
+      {
+        path: this._path,
+        factory: this._useNotebook ? 'Notebook' : 'Editor'
+      }
+    );
+    this._widget = widget;
+    this.jupyterApp.shell.add(this._widget, 'main', { mode: 'split-right' });
+    await activateTabWidget(this.jupyterApp, widget);
+    await layoutReady();
+    if (this._useNotebook) {
+      // Accept default kernel in kernel selection dialog
+      await page.click('.jp-Dialog-button.jp-mod-accept');
+    }
+    const handle = new ElementHandle(widget.node);
+    await handle.waitForSelector('.jp-Editor', { state: 'attached' });
+    await layoutReady();
+    await handle.waitForSelector('.jp-Editor', { state: 'visible' });
+    await layoutReady();
+    let text: string;
+    if (typeof this._options.setup?.setupText !== 'undefined') {
+      text = this._options.setup.setupText;
+    } else {
+      const tokens = [];
+      for (let i = 0; i < this._options.setup.tokenCount; i++) {
+        tokens.push(
+          ('t' + i).padEnd(this._options.setup.tokenSize, 'x') + ' = ' + i
+        );
+      }
+      tokens.push('t');
+      text = tokens.join('\n');
+    }
+    await insertText(this.jupyterApp, text);
+    await layoutReady();
+    await page.waitForSelector('.jp-Completer', { state: 'attached' });
+  }
+
+  async cleanupSuite() {
+    if (this._widget) {
+      // TODO: reset cell/editor contents if anything was added?
+      await this.jupyterApp.commands.execute('docmanager:save');
+      this._widget.close();
+    }
+    // TODO: remove file; also the file should be in a temp dir
+  }
+
+  async run() {
+    if (this._useNotebook) {
+      // TODO enter a specific cell, not the first cell?
+      const handle = new ElementHandle(this._widget!.node);
+      const editor = await handle.$('.jp-Editor textarea');
+      await editor!.focus();
+    }
+    await layoutReady();
+    await page.press('Tab');
+    await layoutReady();
+    await page.waitForSelector('.jp-Completer', { state: 'visible' });
+    await layoutReady();
+  }
+
+  async cleanup() {
+    await page.press('Escape');
+    await layoutReady();
+    await page.waitForSelector('.jp-Completer', { state: 'hidden' });
+    await layoutReady();
+  }
+  id = 'completer';
+  name = 'Completer';
+  configSchema = scenarioCompleterOptionsSchema as any as JSONSchema7;
+  _widget: MainAreaWidget | null = null;
+  _options: CompleterScenarioOptions | null = null;
+  _path: string | null = null;
+  _useNotebook = false;
+}
+
+async function activateTabWidget(
+  jupyterApp: JupyterFrontEnd,
+  widget: MainAreaWidget
+) {
+  await jupyterApp.commands.execute('tabsmenu:activate-by-id', {
+    id: widget.id
+  });
+  await layoutReady();
+  await page.waitForSelector(`li.lm-mod-current[data-id="${widget.id}"]`, {
+    state: 'attached'
+  });
+  await layoutReady();
 }
 
 export class SwitchTabScenario implements IScenario {
@@ -160,37 +288,31 @@ export class SwitchTabScenario implements IScenario {
         default:
           throw Error('Unknown tab type');
       }
-      await waitForElement('#' + widget.id);
+      await page.waitForSelector('#' + widget.id, { state: 'attached' });
       if (
         (this.split === 'first' && this._widgets.length === 0) ||
         this.split === 'all'
       ) {
         this.jupyterApp.shell.add(widget, 'main', { mode: 'split-right' });
       }
-      await this._activateWidget(widget);
+      await activateTabWidget(this.jupyterApp, widget);
       this._widgets.push(widget);
     }
   }
   async cleanupSuite() {
     for (const widget of this._widgets) {
       widget.close();
-      await waitNoElement(`.lm-Widget[data-id="${widget.id}"]`);
+      await page.waitForSelector(`.lm-Widget[data-id="${widget.id}"]`, {
+        state: 'detached'
+      });
     }
-  }
-  private async _activateWidget(widget: MainAreaWidget) {
-    await this.jupyterApp.commands.execute('tabsmenu:activate-by-id', {
-      id: widget.id
-    });
-    await layoutReady();
-    await waitForElement(`li.lm-mod-current[data-id="${widget.id}"]`, true);
-    await layoutReady();
   }
   async run() {
     if (!this._widgets.length) {
       throw new Error('Suite not set up');
     }
     for (const widget of this._widgets) {
-      await this._activateWidget(widget);
+      await activateTabWidget(this.jupyterApp, widget);
     }
   }
   private _tabs: Tab[] = [];

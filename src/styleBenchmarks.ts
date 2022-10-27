@@ -7,7 +7,8 @@ import {
   IBenchmark,
   benchmark
 } from './benchmark';
-import { layoutReady, reportTagCounts, shuffled } from './utils';
+import { reportTagCounts, shuffled } from './utils';
+import { layoutReady } from './dramaturg';
 import { IRuleDescription, extractSourceMap, collectRules } from './css';
 import { renderBlockResult } from './ui';
 

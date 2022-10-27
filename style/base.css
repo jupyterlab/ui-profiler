@@ -101,12 +101,35 @@
 
 .up-BenchmarkResult {
   padding: 8px;
+  min-height: 0;
   grid-area: result;
+  overflow: auto;
   border-top: var(--jp-border-width) solid var(--jp-border-color1);
+  display: grid;
+  grid:
+    'summary'
+    'details';
+  grid-template-rows: min-content 1fr;
+}
+
+.up-BenchmarkResult-summary {
+  display: grid;
+  grid: 'benchmarkInfo environmentInfo';
+  grid-area: summary;
+  min-height: 0;
+}
+
+.up-BenchmarkResult-details {
+  grid-area: details;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .up-BenchmarkHistory {
   grid-area: history;
+  min-height: 0;
+  overflow: auto;
   background-color: var(--jp-layout-color2);
   border-right: var(--jp-border-width) solid var(--jp-border-color1);
   border-top: var(--jp-border-width) solid var(--jp-border-color1);
@@ -159,4 +182,25 @@
 
 .up-BenchmarkMonitor-content.up-mod-waiting {
   display: none;
+}
+
+.up-BenchmarkMonitor-content {
+  background: var(--jp-layout-color0);
+}
+
+.up-BenchmarkResult-benchmarkInfo {
+  grid-area: benchmarkInfo;
+}
+
+.up-BenchmarkResult-environmentInfo {
+  grid-area: environmentInfo;
+}
+
+.up-BenchmarkResult .lm-DataGrid {
+  min-height: 100%;
+}
+
+.up-BenchmarkResult-details .up-LuminoWidgetWrapper {
+  flex-grow: 1;
+  margin-top: 8px;
 }

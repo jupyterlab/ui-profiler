@@ -21,7 +21,7 @@ import {
   IProgress
 } from './benchmark';
 import { IRuleDescription } from './css';
-import { formatTime } from './utils';
+import { formatTime, IJupyterState } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
 import {
   CustomTemplateFactory,
@@ -39,6 +39,7 @@ interface IProfilerProps {
    */
   translator: ITranslator;
   upload: (file: File) => Promise<Contents.IModel>;
+  getJupyterState: () => IJupyterState;
 }
 
 interface ILauncherProps extends IProfilerProps {
@@ -118,7 +119,6 @@ export class ResultTable extends DataGrid {
     this.selectionModel = new BasicSelectionModel({
       dataModel: this.dataModel
     });
-    this.node.style.height = '500px';
     this.fitColumnNames('all');
     const columnWidths = {
       source: 425,
@@ -168,7 +168,7 @@ export function renderBlockResult(props: {
     rulesWidget.current = new ResultTable([...Object.values(ruleResults)]);
   }
   return (
-    <div>
+    <>
       <div
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setDisplay(event.target.value);
@@ -188,7 +188,7 @@ export function renderBlockResult(props: {
       ) : (
         <LuminoWidget widget={rulesWidget.current} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -201,13 +201,13 @@ export class UIProfiler extends ReactWidget {
     this.manager = new ServiceManager();
     this.resultAdded = new Signal(this);
   }
-  handleResult(result: IBenchmarkResult) {
+  handleResult(result: IBenchmarkResult): void {
     this.result = result;
     this.update();
     this.resultAdded.emit(result);
   }
 
-  async loadResult(file: Contents.IModel) {
+  async loadResult(file: Contents.IModel): Promise<void> {
     file = await this.manager.contents.get(file.path);
     this.handleResult(JSON.parse(file.content));
   }
@@ -284,11 +284,11 @@ export class BenchmarkHistory extends React.Component<
     });
   }
 
-  componentDidMount() {
+  componentDidMount(): void {
     this._handle = window.setInterval(this.update, 2000);
   }
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     if (this._handle !== null) {
       window.clearInterval(this._handle);
     }
@@ -329,6 +329,28 @@ interface IResultProps {
   scenarios: IScenario[];
 }
 
+/**
+ * Veri simplistic extraction of major browsers data, based on
+ * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
+ */
+function extractBrowserVersion(userAgent: string): string {
+  // order matters!
+  const expressions = [
+    /Firefox\/\d+/,
+    /OPR\/\d+/,
+    /Edg\/\d+/,
+    /Mobile\/.* Safari\/\d+/,
+    /Chrome\/\d+/
+  ];
+  for (const expr of expressions) {
+    const match = userAgent.match(expr);
+    if (match) {
+      return match[0];
+    }
+  }
+  return 'Unknown browser';
+}
+
 export class BenchmarkResult extends React.Component<IResultProps> {
   render() {
     const { result, benchmarks, scenarios } = this.props;
@@ -337,9 +359,7 @@ export class BenchmarkResult extends React.Component<IResultProps> {
     );
     if (!result) {
       return wrap(
-        <div>
-          No result yet (choose one from the panel, or run a new benchmark)
-        </div>
+        <div>Choose a result from the panel, or run a new benchmark.</div>
       );
     }
     const scenario = scenarios.find(
@@ -358,20 +378,43 @@ export class BenchmarkResult extends React.Component<IResultProps> {
       this._table = new ResultTable(result.result.results);
     }
     return wrap(
-      <div>
-        Results for {benchmark.name} {scenario.name}. Reference: IQM:{' '}
-        {Statistic.round(
-          Statistic.interQuartileMean(result.result.reference),
-          1
-        )}{' '}
-        ms, mean: {Statistic.round(Statistic.mean(result.result.reference), 1)}{' '}
-        ms, min: {Statistic.min(result.result.reference)} ms
-        {benchmark.render ? (
-          <benchmark.render outcome={result.result} />
-        ) : (
-          <LuminoWidget widget={this._table!} />
-        )}
-      </div>
+      <>
+        <div className="up-BenchmarkResult-summary">
+          <div className="up-BenchmarkResult-benchmarkInfo">
+            <div>
+              {benchmark.name} {scenario.name}
+            </div>
+            <div>
+              Reference: IQM:{' '}
+              {Statistic.round(
+                Statistic.interQuartileMean(result.result.reference),
+                1
+              )}{' '}
+              ms, mean:{' '}
+              {Statistic.round(Statistic.mean(result.result.reference), 1)} ms,
+              min: {Statistic.min(result.result.reference)} ms
+            </div>
+            <div>Total time: {formatTime(result.result.totalTime)}</div>
+          </div>
+          <div className="up-BenchmarkResult-environmentInfo">
+            <div>
+              Application: {result.jupyter.client} {result.jupyter.version}{' '}
+              {result.jupyter.devMode ? 'dev mode' : null} {result.jupyter.mode}
+            </div>
+            <div title={result.userAgent}>
+              Browser: {extractBrowserVersion(result.userAgent)}
+            </div>
+            <div>CPU cores: {result.hardwareConcurrency}</div>
+          </div>
+        </div>
+        <div className="up-BenchmarkResult-details">
+          {benchmark.render ? (
+            <benchmark.render outcome={result.result} />
+          ) : (
+            <LuminoWidget widget={this._table!} />
+          )}
+        </div>
+      </>
     );
   }
   private _table: ResultTable | null = null;
@@ -402,7 +445,9 @@ export class BenchmarkMonitor extends React.Component<
             let remaining = NaN;
             let status: string;
             if (this.start) {
-              const now = new Date();
+              const now =
+                args.percentage === 100 && this.end ? this.end : new Date();
+              this.end = now;
               elapsed = now.getTime() - this.start.getTime();
               remaining = ((100 - args.percentage) * elapsed) / args.percentage;
               status = args.percentage === 100 ? 'up-mod-completed' : '';
@@ -424,6 +469,7 @@ export class BenchmarkMonitor extends React.Component<
     );
   }
   start: Date | null = null;
+  end: Date | null = null;
 }
 
 interface IBenchmarkResult {
@@ -431,7 +477,7 @@ interface IBenchmarkResult {
   options: JSONObject;
   benchmark: string;
   scenario: string;
-  browser: string;
+  userAgent: string;
   hardwareConcurrency: number;
   completed: Date;
   windowSize: {
@@ -439,6 +485,7 @@ interface IBenchmarkResult {
     height: number;
   };
   id: string;
+  jupyter: IJupyterState;
 }
 
 function benchmarkId(result: Omit<IBenchmarkResult, 'id'>): string {
@@ -487,13 +534,14 @@ export class BenchmarkLauncher extends React.Component<
       options: options,
       benchmark: benchmark.id,
       scenario: scenario.id,
-      browser: window.navigator.userAgent,
+      userAgent: window.navigator.userAgent,
       hardwareConcurrency: window.navigator.hardwareConcurrency,
       completed: new Date(),
       windowSize: {
         width: window.innerWidth,
         height: window.innerHeight
-      }
+      },
+      jupyter: this.props.getJupyterState()
     };
     return {
       ...data,

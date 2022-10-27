@@ -1,0 +1,65 @@
+{
+  "title": "Completer Scenario Options",
+  "type": "object",
+  "properties": {
+    "editor": {
+      "title": "Editor type",
+      "description": "Editor widget to test completion in",
+      "type": "string",
+      "enum": ["Notebook", "File Editor"],
+      "default": "File Editor"
+    },
+    "path": {
+      "title": "Path to document",
+      "description": "Optional path to an existing document of specified editor type. When empty (default) a new temporary file will be created.",
+      "type": "string",
+      "default": ""
+    },
+    "setup": {
+      "title": "Editor setup for completion",
+      "description": "How should the editor be populated?",
+      "default": {
+        "tokenCount": 1000,
+        "tokenSize": 50
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "title": "Auto-generate tokens to complete",
+          "properties": {
+            "tokenCount": {
+              "title": "Token count",
+              "description": "The number of completion items to generate",
+              "type": "number",
+              "minimum": 1,
+              "default": 1000
+            },
+            "tokenSize": {
+              "title": "Token size",
+              "description": "The number characters in each token",
+              "type": "number",
+              "minimum": 1,
+              "default": 50
+            }
+          },
+          "required": ["tokenCount", "tokenSize"]
+        },
+        {
+          "type": "object",
+          "title": "I will provide a custom text",
+          "properties": {
+            "setupText": {
+              "title": "Path",
+              "description": "Text to enter into the editor. Last line should include a partial token on which the completion will be riggered.",
+              "type": "string",
+              "default": ""
+            }
+          },
+          "required": ["setupText"]
+        }
+      ]
+    }
+  },
+  "required": ["editor", "setup"],
+  "additionalProperties": false
+}
