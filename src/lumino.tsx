@@ -5,24 +5,23 @@ interface ILuminoWidget {
   widget: Widget;
 }
 
-export const LuminoWidget = (props: ILuminoWidget) => {
+export const LuminoWidget = (props: ILuminoWidget): JSX.Element => {
   const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const widget = props.widget;
-    //
     Widget.attach(widget, ref.current!);
-    return () => {
-      Widget.detach(widget);
-    };
-  }, [props.widget]);
-
-  React.useLayoutEffect(() => {
     function updateSize() {
       props.widget.fit();
     }
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+    const observer = new ResizeObserver(entries => {
+      updateSize();
+    });
+    observer.observe(ref.current!.parentElement!);
+    return () => {
+      Widget.detach(widget);
+      observer.disconnect();
+    };
+  }, [props.widget]);
 
-  return <div ref={ref}></div>;
+  return <div className="up-LuminoWidgetWrapper" ref={ref}></div>;
 };
