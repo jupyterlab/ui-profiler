@@ -58,7 +58,13 @@ export async function benchmark(
       await scenario.setup();
     }
     const start = Date.now();
-    await scenario.run();
+    try {
+      await scenario.run();
+    } catch (e) {
+      // TODO: surface the error in the UI
+      // one solution would be to return (number | Error)[]s
+      console.error('Benchmark failed in scenario', scenario, e);
+    }
     times.push(Date.now() - start);
     if (scenario.cleanup) {
       await scenario.cleanup();
