@@ -28,7 +28,7 @@ async function openMainMenu(jupyterApp: JupyterFrontEnd, menu = 'file') {
   await layoutReady();
 }
 
-async function cleanupMenu() {
+async function cleanupMenu(): Promise<void> {
   // ensure menu is open
   await page.waitForSelector('.lm-Menu', { state: 'attached' });
   await page.press('Escape');
@@ -41,14 +41,14 @@ export class MenuSwitchScenario implements IScenario {
     // no-op
   }
 
-  setOptions(options: ScenarioOptions) {
+  setOptions(options: ScenarioOptions): void {
     // no-op
   }
 
-  async setup() {
+  async setup(): Promise<void> {
     return openMainMenu(this.jupyterApp);
   }
-  async run() {
+  async run(): Promise<void> {
     return switchMainMenu(this.jupyterApp);
   }
   cleanup = cleanupMenu;
@@ -62,11 +62,11 @@ export class MenuOpenScenario implements IScenario {
     this._menu = 'file';
   }
 
-  setOptions(options: MenuOpenScenarioOptions) {
+  setOptions(options: MenuOpenScenarioOptions): void {
     this._menu = options.menu;
   }
 
-  async run() {
+  async run(): Promise<void> {
     return openMainMenu(this.jupyterApp, this._menu);
   }
   cleanup = cleanupMenu;
@@ -76,7 +76,7 @@ export class MenuOpenScenario implements IScenario {
   private _menu: string;
 }
 
-async function closeSidePanels(jupyterApp: JupyterFrontEnd) {
+async function closeSidePanels(jupyterApp: JupyterFrontEnd): Promise<void> {
   for (const side of ['left', 'right']) {
     const panel = document.querySelector(`#jp-${side}-stack`);
     if (panel && !panel.classList.contains('lm-mod-hidden')) {
@@ -92,14 +92,14 @@ export class SidePanelOpenScenario implements IScenario {
     // no-op
   }
 
-  setOptions(options: ScenarioOptions) {
+  setOptions(options: ScenarioOptions): void {
     // no-op
   }
 
-  async setup() {
+  async setup(): Promise<void> {
     return closeSidePanels(this.jupyterApp);
   }
-  async run() {
+  async run(): Promise<void> {
     // TODO make this configurable (with this list as default)
     for (const panel of [
       'table-of-contents',
@@ -121,7 +121,10 @@ export class SidePanelOpenScenario implements IScenario {
   configSchema = scenarioOptionsSchema as JSONSchema7;
 }
 
-export function insertText(jupyterApp: JupyterFrontEnd, text: string) {
+export function insertText(
+  jupyterApp: JupyterFrontEnd,
+  text: string
+): Promise<void> {
   return jupyterApp.commands.execute('apputils:run-first-enabled', {
     commands: [
       'notebook:replace-selection',
@@ -139,12 +142,12 @@ export class CompleterScenario implements IScenario {
     // no-op
   }
 
-  setOptions(options: CompleterScenarioOptions) {
+  setOptions(options: CompleterScenarioOptions): void {
     this._options = options;
     this._useNotebook = this._options.editor === 'Notebook';
   }
 
-  async setupSuite() {
+  async setupSuite(): Promise<void> {
     if (!this._options) {
       throw new Error('Options not set for completer scenario.');
     }
@@ -201,7 +204,7 @@ export class CompleterScenario implements IScenario {
     await page.waitForSelector('.jp-Completer', { state: 'attached' });
   }
 
-  async cleanupSuite() {
+  async cleanupSuite(): Promise<void> {
     if (this._widget) {
       // TODO: reset cell/editor contents if anything was added?
       await this.jupyterApp.commands.execute('docmanager:save');
@@ -210,7 +213,7 @@ export class CompleterScenario implements IScenario {
     // TODO: remove file; also the file should be in a temp dir
   }
 
-  async run() {
+  async run(): Promise<void> {
     if (this._useNotebook) {
       // TODO enter a specific cell, not the first cell?
       const handle = new ElementHandle(this._widget!.node);
@@ -224,7 +227,7 @@ export class CompleterScenario implements IScenario {
     await layoutReady();
   }
 
-  async cleanup() {
+  async cleanup(): Promise<void> {
     await page.press('Escape');
     await layoutReady();
     await page.waitForSelector('.jp-Completer', { state: 'hidden' });
@@ -263,7 +266,7 @@ export class SwitchTabScenario implements IScenario {
     // no-op
   }
 
-  setOptions(options: TabScenarioOptions) {
+  setOptions(options: TabScenarioOptions): void {
     const { tabs } = options;
     if (!tabs || !tabs.length) {
       throw new Error('At least one tab specification must be provided');
@@ -272,7 +275,7 @@ export class SwitchTabScenario implements IScenario {
     this._widgets = [];
   }
 
-  async setupSuite() {
+  async setupSuite(): Promise<void> {
     this._widgets = [];
     for (const tab of this._tabs) {
       let widget: MainAreaWidget;
@@ -299,7 +302,7 @@ export class SwitchTabScenario implements IScenario {
       this._widgets.push(widget);
     }
   }
-  async cleanupSuite() {
+  async cleanupSuite(): Promise<void> {
     for (const widget of this._widgets) {
       widget.close();
       await page.waitForSelector(`.lm-Widget[data-id="${widget.id}"]`, {
@@ -307,7 +310,7 @@ export class SwitchTabScenario implements IScenario {
       });
     }
   }
-  async run() {
+  async run(): Promise<void> {
     if (!this._widgets.length) {
       throw new Error('Suite not set up');
     }

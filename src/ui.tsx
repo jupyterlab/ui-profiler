@@ -1,7 +1,7 @@
 import Form from '@rjsf/core';
 import React from 'react';
 import { ReactWidget, UseSignal } from '@jupyterlab/apputils';
-import { Contents } from '@jupyterlab/services';
+import { Contents, ServiceManager } from '@jupyterlab/services';
 import { ProgressBar } from '@jupyterlab/statusbar';
 import { ITranslator } from '@jupyterlab/translation';
 import { JSONExt, JSONObject } from '@lumino/coreutils';
@@ -21,7 +21,7 @@ import {
   IProgress
 } from './benchmark';
 import { IRuleDescription } from './css';
-import { formatTime, IJupyterState } from './utils';
+import { formatTime, IJupyterState, extractBrowserVersion } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
 import {
   CustomTemplateFactory,
@@ -138,7 +138,7 @@ export class ResultTable extends DataGrid {
 
 export function renderBlockResult(props: {
   outcome: IOutcome<IRuleBlockResult>;
-}) {
+}): JSX.Element {
   const results = props.outcome.results;
   const [display, setDisplay] = React.useState('block');
   // Cache the blocks table.
@@ -212,7 +212,7 @@ export class UIProfiler extends ReactWidget {
     this.handleResult(JSON.parse(file.content));
   }
 
-  render() {
+  render(): JSX.Element {
     return (
       <div className="up-UIProfiler">
         <BenchmarkLauncher
@@ -242,8 +242,6 @@ interface IHistoryProps {
   onSelect: (file: Contents.IModel) => void;
   resultAdded: ISignal<any, IBenchmarkResult>;
 }
-
-import { ServiceManager } from '@jupyterlab/services';
 
 interface IHistoryState {
   files: Contents.IModel[];
@@ -329,30 +327,8 @@ interface IResultProps {
   scenarios: IScenario[];
 }
 
-/**
- * Veri simplistic extraction of major browsers data, based on
- * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
- */
-function extractBrowserVersion(userAgent: string): string {
-  // order matters!
-  const expressions = [
-    /Firefox\/\d+/,
-    /OPR\/\d+/,
-    /Edg\/\d+/,
-    /Mobile\/.* Safari\/\d+/,
-    /Chrome\/\d+/
-  ];
-  for (const expr of expressions) {
-    const match = userAgent.match(expr);
-    if (match) {
-      return match[0];
-    }
-  }
-  return 'Unknown browser';
-}
-
 export class BenchmarkResult extends React.Component<IResultProps> {
-  render() {
+  render(): JSX.Element {
     const { result, benchmarks, scenarios } = this.props;
     const wrap = (el: JSX.Element) => (
       <div className="up-BenchmarkResult">{el}</div>

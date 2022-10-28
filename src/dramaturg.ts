@@ -137,7 +137,10 @@ export class ElementHandle {
   type(text: string, options = { delay: 0 }): Promise<void> {
     return type(text, options, this.element);
   }
-  waitForSelector(selector: string, options: IWaitForSelectorOptions) {
+  waitForSelector(
+    selector: string,
+    options: IWaitForSelectorOptions
+  ): Promise<ElementHandle> {
     return waitForSelector(selector, {
       ...options,
       within: this.element
@@ -275,12 +278,12 @@ export const page = {
     const element = await waitForSelector(selector, { state: 'visible' });
     return element.type(text, options);
   },
-  click: async (selector: string) => {
+  click: async (selector: string): Promise<void> => {
     await waitForSelector(selector, { state: 'attached' });
     const element = await waitForSelector(selector, { state: 'visible' });
     click(element.element as HTMLElement);
   },
-  focus: async (selector: string) => {
+  focus: async (selector: string): Promise<void> => {
     const element = await waitForSelector(selector, { state: 'visible' });
     (element.element as HTMLElement).focus();
   }

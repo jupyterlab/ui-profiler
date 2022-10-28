@@ -42,3 +42,25 @@ export interface IJupyterState {
   devMode: boolean;
   mode: DockPanel.Mode;
 }
+
+/**
+ * Simplistic extraction of major browsers data, based on
+ * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent
+ */
+export function extractBrowserVersion(userAgent: string): string {
+  // order matters!
+  const expressions = [
+    /Firefox\/\d+/,
+    /OPR\/\d+/,
+    /Edg\/\d+/,
+    /Mobile\/.* Safari\/\d+/,
+    /Chrome\/\d+/
+  ];
+  for (const expr of expressions) {
+    const match = userAgent.match(expr);
+    if (match) {
+      return match[0];
+    }
+  }
+  return 'Unknown browser';
+}
