@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
 ]
 dependencies = [
+    "jupyter_server>=1.6,<2"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
@@ -41,11 +42,13 @@ source = "nodejs"
 fields = ["description", "authors", "urls"]
 
 [tool.hatch.build]
-artifacts = ["jupyterlab-ui-profiler/labextension"]
+artifacts = ["jupyterlab_ui_profiler/labextension"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab-ui-profiler/labextension" = "share/jupyter/labextensions/@jupyterlab-benchmarks/ui-profiler"
 "install.json" = "share/jupyter/labextensions/@jupyterlab-benchmarks/ui-profiler/install.json"
+"jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
+"jupyter-config/nb-config" = "etc/jupyter/jupyter_notebook_config.d"
 
 [tool.hatch.build.targets.sdist]
 exclude = [".github"]
@@ -57,7 +60,7 @@ ensured-targets = [
     "jupyterlab-ui-profiler/labextension/static/style.js",
     "jupyterlab-ui-profiler/labextension/package.json",
 ]
-skip-if-exists = ["jupyterlab-ui-profiler/labextension/static/style.js"]
+skip-if-exists = ["jupyterlab_ui_profiler/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 build_cmd = "build:prod"
@@ -67,7 +70,7 @@ npm = ["jlpm"]
 build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
-build_dir = "jupyterlab-ui-profiler/labextension"
+build_dir = "jupyterlab_ui_profiler/labextension"
 
 [tool.jupyter-releaser.options]
 version_cmd = "hatch version"

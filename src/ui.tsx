@@ -83,7 +83,8 @@ export class ResultTable extends DataGrid {
       if (result['content']) {
         result['content'] = result['content'].substring(0, 500);
       }
-      result['min'] = Math.min(...result.times);
+      result['times'] = result.times.map(t => Statistic.round(t, 1));
+      result['min'] = Statistic.round(Statistic.min(result.times), 1);
       result['mean'] = Statistic.round(Statistic.mean(result.times), 1);
       result['IQM'] = Statistic.round(
         Statistic.interQuartileMean(result.times),
@@ -368,7 +369,8 @@ export class BenchmarkResult extends React.Component<IResultProps> {
               )}{' '}
               ms, mean:{' '}
               {Statistic.round(Statistic.mean(result.result.reference), 1)} ms,
-              min: {Statistic.min(result.result.reference)} ms
+              min: {Statistic.round(Statistic.min(result.result.reference), 1)}{' '}
+              ms
             </div>
             <div>Total time: {formatTime(result.result.totalTime)}</div>
           </div>

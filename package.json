@@ -99,7 +99,7 @@
   },
   "jupyterlab": {
     "extension": true,
-    "outputDir": "jupyterlab-ui-profiler/labextension"
+    "outputDir": "jupyterlab_ui_profiler/labextension"
   },
   "jupyter-releaser": {
     "hooks": {

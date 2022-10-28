@@ -3,7 +3,28 @@
 [![Github Actions Status](https://github.com/jupyterlab/benchmarks/workflows/Build/badge.svg)](https://github.com/jupyterlab/benchmarks/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jupyterlab/benchmarks/main?urlpath=lab)
 
-JupyterLab extension for profiling UI performance
+JupyterLab extension for profiling UI performance.
+
+Note: when this extension is enabled, the server will return additional headers:
+
+- to allow high-precision `performance.now()` measurements in Firefox 79+:
+
+```
+Cross-Origin-Opener-Policy: same-origin,
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+- to enable JavaScript self-profiling in Chrome:
+  ```
+  Document-Policy: js-profiling
+  ```
+
+If this is undesirable in your deployment, but you still want to use the profiler without these functions,
+you can disable the server extension which sets these headers with:
+
+```
+jupyter server extension disable jupyterlab_ui_profiler
+```
 
 ## Requirements
 
