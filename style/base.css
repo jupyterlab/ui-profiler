@@ -35,15 +35,17 @@
   border-right: 1px solid var(--jp-layout-color2);
   overflow: hidden;
   padding: 8px;
+  display: flex;
+  flex-direction: column;
 }
 
 .up-BenchmarkLauncher-card:last-child {
   border-right: 0;
 }
 
-.up-BenchmarkLauncher-card .rjsf {
+.up-BenchmarkLauncher-forms {
   overflow: auto;
-  height: 100%;
+  flex-grow: 1;
 }
 
 .up-BenchmarkLauncher .array-item button {
@@ -203,4 +205,8 @@
 .up-BenchmarkResult-details .up-LuminoWidgetWrapper {
   flex-grow: 1;
   margin-top: 8px;
+}
+
+.up-BenchmarkLauncher .jp-mod-styled:disabled {
+  opacity: 0.4;
 }
