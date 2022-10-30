@@ -8,13 +8,17 @@ export function shuffled<T = any>(array: T[]): T[] {
 }
 
 export function reportTagCounts(): Record<string, number> {
-  return {
-    total: document.querySelectorAll('*').length,
-    div: document.querySelectorAll('div').length,
-    span: document.querySelectorAll('span').length,
-    svg: document.querySelectorAll('svg').length,
-    li: document.querySelectorAll('li').length
-  };
+  const allElements = document.querySelectorAll('*');
+  const counts: Record<string, number> = {};
+  for (const elements of allElements.values()) {
+    const tagName = elements.tagName.toLocaleLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(counts, tagName)) {
+      counts[tagName] = 1;
+    } else {
+      counts[tagName] += 1;
+    }
+  }
+  return counts;
 }
 
 export function formatTime(miliseconds: number): string {

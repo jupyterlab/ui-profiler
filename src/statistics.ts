@@ -4,7 +4,7 @@ export namespace Statistic {
   }
 
   export function mean(numbers: number[]): number {
-    return numbers.reduce((a, b) => a + b) / numbers.length;
+    return sum(numbers) / numbers.length;
   }
 
   export function interQuartileMean(numbers: number[]): number {
@@ -15,5 +15,9 @@ export namespace Statistic {
   export function round(n: number, precision = 0): number {
     const factor = Math.pow(10, precision);
     return Math.round(n * factor) / factor;
+  }
+
+  export function sum(numbers: number[]): number {
+    return numbers.reduce((a, b) => a + b);
   }
 }

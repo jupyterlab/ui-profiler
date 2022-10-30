@@ -2,8 +2,8 @@ import { JSONSchema7 } from 'json-schema';
 
 import {
   IScenario,
-  IResult,
-  IOutcome,
+  ITimeMeasurement,
+  ITimingOutcome,
   IBenchmark,
   benchmark
 } from './benchmark';
@@ -20,17 +20,17 @@ import type { BenchmarkOptions } from './types/_benchmark-base';
 import type { StyleRuleBenchmarkOptions } from './types/_benchmark-rule';
 import type { StyleRuleGroupBenchmarkOptions } from './types/_benchmark-rule-group';
 
-interface IStylesheetResult extends IResult {
+interface IStylesheetResult extends ITimeMeasurement {
   content: string | null;
   source: string | null;
   stylesheetIndex: number;
 }
 
-interface IRuleResult extends IResult, IRuleDescription {
+interface IRuleResult extends ITimeMeasurement, IRuleDescription {
   // no-op
 }
 
-export interface IRuleBlockResult extends IResult {
+export interface IRuleBlockResult extends ITimeMeasurement {
   /**
    * What rules landed in this block?
    */
@@ -51,15 +51,17 @@ export interface IRuleBlockResult extends IResult {
   randomization: number;
 }
 
-export const styleSheetsBenchmark: IBenchmark = {
+export const styleSheetsBenchmark: IBenchmark<
+  ITimingOutcome<IStylesheetResult>
+> = {
   id: 'style-sheet',
-  name: 'Style Sheet Benchmark',
+  name: 'Style Sheets',
   configSchema: benchmarkOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
     options: BenchmarkOptions = {},
     progress
-  ): Promise<IOutcome<IStylesheetResult>> => {
+  ): Promise<ITimingOutcome<IStylesheetResult>> => {
     const n = options.repeats || 3;
     const start = Date.now();
     const styles = [...document.querySelectorAll('style')];
@@ -86,14 +88,13 @@ export const styleSheetsBenchmark: IBenchmark = {
       j++;
       sheet.disabled = true;
       await layoutReady();
-      const times = await benchmark(scenario, n, true);
-      times;
+      const measurements = await benchmark(scenario, n, true);
       await layoutReady();
       sheet.disabled = false;
       const cssMap = await extractSourceMap(style.textContent);
       results.push({
+        ...measurements,
         content: style.textContent,
-        times: times,
         source: cssMap != null ? cssMap.sources[0] : null,
         stylesheetIndex: j
       });
@@ -104,22 +105,23 @@ export const styleSheetsBenchmark: IBenchmark = {
     progress?.emit({ percentage: 100 });
     return {
       results: results,
-      reference: reference,
+      reference: reference.times,
       tags: reportTagCounts(),
-      totalTime: Date.now() - start
+      totalTime: Date.now() - start,
+      type: 'time'
     };
   }
 };
 
-export const styleRuleBenchmark: IBenchmark = {
+export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
   id: 'style-rule',
-  name: 'Style Rule Benchmark',
+  name: 'Style Rules',
   configSchema: benchmarkRuleOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
     options: StyleRuleBenchmarkOptions = {},
     progress
-  ): Promise<IOutcome<IRuleResult>> => {
+  ): Promise<ITimingOutcome<IRuleResult>> => {
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
@@ -132,30 +134,24 @@ export const styleRuleBenchmark: IBenchmark = {
     const reference = await benchmark(scenario, n, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleResult[] = [];
-    let j = 0;
-    for (const style of styles) {
-      // TODO: more granular progress? (collect rules once for all styles?)
-      progress?.emit({ percentage: (100 * j) / styles.length });
-      console.log('Benchmarking stylesheet', j, 'out of', styles.length);
-      j++;
-      const rules = await collectRules([style], { skipPattern });
-      for (let i = 0; i < rules.length; i++) {
-        const rule = rules[i];
-        // benchmark without the rule
-        rule.sheet.deleteRule(rule.ruleIndex);
-        await layoutReady();
-        const times = await benchmark(scenario, n, true);
-        results.push({
-          selector: rule.selector,
-          times: times,
-          source: rule.source,
-          ruleIndex: rule.ruleIndex,
-          stylesheetIndex: j
-        });
-        // restore the rule
-        rule.sheet.insertRule(rule.rule.cssText, i);
-        await layoutReady();
-      }
+    const rules = await collectRules(styles, { skipPattern });
+    for (let i = 0; i < rules.length; i++) {
+      progress?.emit({ percentage: (100 * i) / rules.length });
+      const rule = rules[i];
+      // benchmark without the rule
+      rule.sheet.deleteRule(rule.ruleIndex);
+      await layoutReady();
+      const measurements = await benchmark(scenario, n, true);
+      results.push({
+        ...measurements,
+        selector: rule.selector,
+        source: rule.source,
+        ruleIndex: rule.ruleIndex,
+        stylesheetIndex: rule.stylesheetIndex
+      });
+      // restore the rule
+      rule.sheet.insertRule(rule.rule.cssText, rule.ruleIndex);
+      await layoutReady();
     }
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
@@ -163,22 +159,25 @@ export const styleRuleBenchmark: IBenchmark = {
     progress?.emit({ percentage: 100 });
     return {
       results: results,
-      reference: reference,
+      reference: reference.times,
       tags: reportTagCounts(),
-      totalTime: Date.now() - start
+      totalTime: Date.now() - start,
+      type: 'time'
     };
   }
 };
 
-export const styleRuleGroupBenchmark: IBenchmark<IRuleBlockResult> = {
+export const styleRuleGroupBenchmark: IBenchmark<
+  ITimingOutcome<IRuleBlockResult>
+> = {
   id: 'style-rule-group',
-  name: 'Style Rule Group Benchmark',
+  name: 'Style Rule Groups',
   configSchema: benchmarkRuleGroupOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
     options: StyleRuleGroupBenchmarkOptions = {},
     progress
-  ): Promise<IOutcome<IRuleBlockResult>> => {
+  ): Promise<ITimingOutcome<IRuleBlockResult>> => {
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
@@ -228,9 +227,9 @@ export const styleRuleGroupBenchmark: IBenchmark<IRuleBlockResult> = {
             ruleData.sheet.deleteRule(ruleData.ruleIndex);
           }
           await layoutReady();
-          const times = await benchmark(scenario, n, true);
+          const measurements = await benchmark(scenario, n, true);
           results.push({
-            times: times,
+            ...measurements,
             rulesInBlock: rulesInBlock,
             block: i,
             divisions: blocks,
@@ -254,9 +253,10 @@ export const styleRuleGroupBenchmark: IBenchmark<IRuleBlockResult> = {
     progress?.emit({ percentage: 100 });
     return {
       results: results,
-      reference: reference,
+      reference: reference.times,
       tags: reportTagCounts(),
-      totalTime: Date.now() - start
+      totalTime: Date.now() - start,
+      type: 'time'
     };
   },
   render: renderBlockResult

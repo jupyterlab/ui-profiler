@@ -6,7 +6,7 @@
       "title": "Number of repeats",
       "type": "integer",
       "minimum": 1,
-      "default": 3
+      "default": 5
     },
     "skipPattern": {
       "title": "Regular expression to filter out rules",
@@ -23,13 +23,13 @@
       "title": "Maximal block size",
       "type": "integer",
       "minimum": 1,
-      "default": 3
+      "default": 5
     },
     "sheetRandomizations": {
       "title": "Number of sheet randomizations",
       "type": "integer",
       "minimum": 0,
-      "default": 3
+      "default": 5
     }
   }
 }

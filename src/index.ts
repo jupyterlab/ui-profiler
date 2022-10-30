@@ -16,6 +16,7 @@ import {
   styleRuleBenchmark,
   styleRuleGroupBenchmark
 } from './styleBenchmarks';
+import { selfProfileBenchmark } from './jsBenchmarks';
 import {
   MenuOpenScenario,
   MenuSwitchScenario,
@@ -24,7 +25,7 @@ import {
   SidePanelOpenScenario,
   CompleterScenario
 } from './scenarios';
-import { IBenchmark } from './benchmark';
+import { IBenchmark, ITimingOutcome, IProfilingOutcome } from './benchmark';
 import { IJupyterState } from './utils';
 
 namespace CommandIDs {
@@ -50,8 +51,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
       benchmarks: [
         styleSheetsBenchmark,
         styleRuleBenchmark,
-        styleRuleGroupBenchmark
-      ] as IBenchmark[],
+        styleRuleGroupBenchmark,
+        selfProfileBenchmark
+      ] as (IBenchmark<ITimingOutcome<any>> | IBenchmark<IProfilingOutcome>)[],
       scenarios: [
         new MenuOpenScenario(app),
         new MenuSwitchScenario(app),

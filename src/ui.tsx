@@ -5,34 +5,30 @@ import { Contents, ServiceManager } from '@jupyterlab/services';
 import { ProgressBar } from '@jupyterlab/statusbar';
 import { ITranslator } from '@jupyterlab/translation';
 import { JSONExt, JSONObject } from '@lumino/coreutils';
-import {
-  DataGrid,
-  JSONModel,
-  BasicKeyHandler,
-  BasicMouseHandler,
-  BasicSelectionModel
-} from '@lumino/datagrid';
 import { Signal, ISignal } from '@lumino/signaling';
 import {
   IBenchmark,
   IOutcome,
-  IResult,
+  ITimeMeasurement,
   IScenario,
-  IProgress
+  IProgress,
+  ITimingOutcome,
+  IProfilingOutcome
 } from './benchmark';
-import { IRuleDescription } from './css';
 import { formatTime, IJupyterState, extractBrowserVersion } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
+import { extractTimes } from './jsBenchmarks';
 import {
   CustomTemplateFactory,
   CustomArrayTemplateFactory,
   CustomObjectTemplateFactory
 } from './templates';
 import { Statistic } from './statistics';
+import { TimingTable, ResultTable } from './table';
 import { LuminoWidget } from './lumino';
 
 interface IProfilerProps {
-  benchmarks: IBenchmark[];
+  benchmarks: (IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>)[];
   scenarios: IScenario[];
   /**
    * Translator object
@@ -52,7 +48,7 @@ interface IMonitorProps extends IProfilerProps {
 }
 
 interface IProfilerState {
-  benchmark: IBenchmark;
+  benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>;
   scenarios: Set<IScenario>;
   /**
    * Field template
@@ -75,85 +71,96 @@ interface IConfigValue {
   benchmark: JSONObject;
 }
 
-export class ResultTable extends DataGrid {
-  constructor(outcome: IResult[]) {
-    super();
-    const results = outcome.map(result => {
-      // Make a copy
-      result = { ...result };
-      // https://github.com/jupyterlab/lumino/issues/448
-      if (result['content']) {
-        result['content'] = result['content'].substring(0, 500);
-      }
-      result['times'] = result.times.map(t => Statistic.round(t, 1));
-      result['min'] = Statistic.round(Statistic.min(result.times), 1);
-      result['mean'] = Statistic.round(Statistic.mean(result.times), 1);
-      result['IQM'] = Statistic.round(
-        Statistic.interQuartileMean(result.times),
-        1
-      );
-      if (result.source) {
-        result['source'] = result['source'].replace('webpack://./', '');
-      }
-      if (result['rulesInBlock']) {
-        result['rulesInBlock'] = (
-          result['rulesInBlock'] as IRuleDescription[]
-        ).map(rule => {
-          return rule.selector;
-        });
-      }
-      return result;
-    });
-    const first = results[0];
-    const fieldNames = Object.keys(first);
-    this.dataModel = new JSONModel({
-      data: results.sort((a, b) => a.IQM - b.IQM),
-      schema: {
-        fields: fieldNames.map(key => {
-          return {
-            name: key,
-            type: 'string'
-          };
-        })
-      }
-    });
-    this.keyHandler = new BasicKeyHandler();
-    this.mouseHandler = new BasicMouseHandler();
-    this.selectionModel = new BasicSelectionModel({
-      dataModel: this.dataModel
-    });
-    this.fitColumnNames('all');
-    const columnWidths = {
-      source: 425,
-      content: 100,
-      selector: 175,
-      rulesInBlock: 500,
-      IQM: 45,
-      min: 45
-    };
-    for (const [name, size] of Object.entries(columnWidths)) {
-      const index = fieldNames.indexOf(name);
-      if (index !== -1) {
-        this.resizeColumn('body', index, size);
+export function renderProfile(props: {
+  outcome: IProfilingOutcome;
+}): JSX.Element {
+  // Cache the function table.
+  const functionWidget = React.useRef<TimingTable | null>(null);
+  if (
+    functionWidget.current === null ||
+    functionWidget.current.stateSource !== props.outcome
+  ) {
+    const functionTimings: Record<string, ITimeMeasurement> = {};
+    for (const result of props.outcome.results) {
+      for (const trace of result.traces) {
+        for (const timing of extractTimes(trace)) {
+          const timingId = [
+            timing.name,
+            timing.resource,
+            timing.column,
+            timing.line
+          ].join('-');
+          if (timingId in functionTimings) {
+            functionTimings[timingId].times.push(timing.time);
+          } else {
+            const entry = {
+              name: timing.name,
+              times: [timing.time],
+              resource: timing.resource,
+              column: timing.column,
+              line: timing.line
+            };
+            functionTimings[timingId] = entry;
+          }
+        }
       }
     }
+    const filteredTimings = [...Object.values(functionTimings)].filter(
+      timing => {
+        const isNativeProfilerCall =
+          typeof timing.resource === 'undefined' && timing.name === 'Profiler';
+        const isOurProfilerCode =
+          timing.resource &&
+          timing.resource.includes('@jupyterlab-benchmarks/ui-profiler');
+        return !isNativeProfilerCall && !isOurProfilerCode;
+      }
+    );
+    if (filteredTimings.length !== 0) {
+      functionWidget.current = new TimingTable({
+        measurements: filteredTimings,
+        stateSource: props.outcome,
+        lowerIsBetter: true
+      });
+    } else {
+      functionWidget.current = null;
+    }
   }
+  return (
+    <>
+      {functionWidget.current ? (
+        <LuminoWidget widget={functionWidget.current} />
+      ) : (
+        'No results available. Reduce sampling interval, use macro mode, and/or increase the number of repeats.'
+      )}
+    </>
+  );
 }
 
 export function renderBlockResult(props: {
-  outcome: IOutcome<IRuleBlockResult>;
+  outcome: ITimingOutcome<IRuleBlockResult>;
 }): JSX.Element {
   const results = props.outcome.results;
   const [display, setDisplay] = React.useState('block');
   // Cache the blocks table.
-  const blocksWidget = React.useRef<ResultTable | null>(null);
-  if (blocksWidget.current === null) {
-    blocksWidget.current = new ResultTable(results);
+  const blocksWidget = React.useRef<TimingTable | null>(null);
+  if (
+    blocksWidget.current === null ||
+    blocksWidget.current.stateSource !== props.outcome
+  ) {
+    blocksWidget.current = new TimingTable({
+      measurements: results,
+      reference: props.outcome.reference,
+      stateSource: props.outcome,
+      lowerIsBetter: false
+    });
   }
   // Cache the rules table.
-  const rulesWidget = React.useRef<ResultTable | null>(null);
-  if (rulesWidget.current === null) {
-    const ruleResults: Record<string, IResult> = {};
+  const rulesWidget = React.useRef<TimingTable | null>(null);
+  if (
+    rulesWidget.current === null ||
+    rulesWidget.current.stateSource !== props.outcome
+  ) {
+    const ruleResults: Record<string, ITimeMeasurement> = {};
     for (const block of results) {
       for (const rule of block.rulesInBlock) {
         if (rule.selector in ruleResults) {
@@ -161,7 +168,8 @@ export function renderBlockResult(props: {
         } else {
           const entry = {
             ...rule,
-            times: [...block.times]
+            times: [...block.times],
+            errors: block.errors ? [...block.errors] : []
           };
           delete (entry as any).sheet;
           delete (entry as any).rule;
@@ -169,7 +177,12 @@ export function renderBlockResult(props: {
         }
       }
     }
-    rulesWidget.current = new ResultTable([...Object.values(ruleResults)]);
+    rulesWidget.current = new TimingTable({
+      measurements: [...Object.values(ruleResults)],
+      reference: props.outcome.reference,
+      stateSource: props.outcome,
+      lowerIsBetter: false
+    });
   }
   return (
     <>
@@ -216,7 +229,7 @@ export class UIProfiler extends ReactWidget {
     this.handleResult(JSON.parse(file.content));
   }
 
-  render(): JSX.Element {
+  render<T extends IProfilingOutcome | ITimingOutcome>(): JSX.Element {
     return (
       <div className="up-UIProfiler">
         <BenchmarkLauncher
@@ -230,7 +243,15 @@ export class UIProfiler extends ReactWidget {
           onSelect={this.loadResult}
           {...this.props}
         />
-        <BenchmarkResult result={this.result} {...this.props} />
+        <BenchmarkResult<T>
+          result={this.result as IBenchmarkResultBase<T>}
+          scenarios={this.props.scenarios}
+          benchmarks={
+            this.props.benchmarks.filter(
+              b => b.id === this.result?.benchmark
+            ) as unknown as IBenchmark<T>[]
+          }
+        />
       </div>
     );
   }
@@ -325,13 +346,51 @@ export class BenchmarkHistory extends React.Component<
   private _handle: number | null = null;
 }
 
-interface IResultProps {
-  result: IBenchmarkResult | null;
-  benchmarks: IBenchmark[];
+interface IResultProps<T extends IOutcome> {
+  result: IBenchmarkResultBase<T> | null;
+  benchmarks: IBenchmark<T>[];
   scenarios: IScenario[];
 }
 
-export class BenchmarkResult extends React.Component<IResultProps> {
+function timingSummary(timing: ITimingOutcome): JSX.Element {
+  return (
+    <>
+      <div>
+        Reference: IQM:{' '}
+        {Statistic.round(Statistic.interQuartileMean(timing.reference), 1)} ms,
+        mean: {Statistic.round(Statistic.mean(timing.reference), 1)} ms, min:{' '}
+        {Statistic.round(Statistic.min(timing.reference), 1)} ms
+      </div>
+      <div>Total time: {formatTime(timing.totalTime)}</div>
+    </>
+  );
+}
+
+function profilingSummary(profile: IProfilingOutcome): JSX.Element {
+  const first = profile.results[0];
+  return (
+    <>
+      <div>
+        Traces: {first.traces.length}. Average number of samples:{' '}
+        {Statistic.round(
+          Statistic.mean(first.traces.map(trace => trace.samples.length)),
+          1
+        )}
+        , frames:{' '}
+        {Statistic.round(
+          Statistic.mean(first.traces.map(trace => trace.frames.length)),
+          1
+        )}
+        , sampling interval: {Statistic.round(first.samplingInterval, 1)}
+      </div>
+      <div>Total time: {formatTime(profile.totalTime)}</div>
+    </>
+  );
+}
+
+export class BenchmarkResult<T extends IOutcome> extends React.Component<
+  IResultProps<T>
+> {
   render(): JSX.Element {
     const { result, benchmarks, scenarios } = this.props;
     const wrap = (el: JSX.Element) => (
@@ -347,7 +406,7 @@ export class BenchmarkResult extends React.Component<IResultProps> {
     );
     const benchmark = benchmarks.find(
       candidate => candidate.id === result.benchmark
-    );
+    ) as IBenchmark<T> | undefined;
     if (!scenario) {
       return wrap(<div>Unknown scenario: {result.scenario}</div>);
     }
@@ -355,8 +414,22 @@ export class BenchmarkResult extends React.Component<IResultProps> {
       return wrap(<div>Unknown benchmark: {result.benchmark}</div>);
     }
     if (!benchmark.render && this._previousResult !== result.id) {
-      this._table = new ResultTable(result.result.results);
+      if (result.result.type === 'time') {
+        this._table = new TimingTable({
+          measurements: (result.result as ITimingOutcome).results,
+          reference: (result.result as ITimingOutcome).reference,
+          stateSource: null,
+          lowerIsBetter: false
+        });
+      } else {
+        // should there be a default ProfileTable?
+        this._table = null;
+      }
     }
+    const tagsSummary = [...Object.entries(result.result.tags)]
+      .map(([tag, count]) => `${tag}:  ${count}`)
+      .join('\n');
+    const totalTags = Statistic.sum([...Object.values(result.result.tags)]);
     return wrap(
       <>
         <div className="up-BenchmarkResult-summary">
@@ -364,36 +437,30 @@ export class BenchmarkResult extends React.Component<IResultProps> {
             <div>
               {benchmark.name} {scenario.name}
             </div>
-            <div>
-              Reference: IQM:{' '}
-              {Statistic.round(
-                Statistic.interQuartileMean(result.result.reference),
-                1
-              )}{' '}
-              ms, mean:{' '}
-              {Statistic.round(Statistic.mean(result.result.reference), 1)} ms,
-              min: {Statistic.round(Statistic.min(result.result.reference), 1)}{' '}
-              ms
-            </div>
-            <div>Total time: {formatTime(result.result.totalTime)}</div>
+            {result.result.type === 'time'
+              ? timingSummary(result.result as ITimingOutcome)
+              : profilingSummary(result.result as IProfilingOutcome)}
           </div>
           <div className="up-BenchmarkResult-environmentInfo">
             <div>
               Application: {result.jupyter.client} {result.jupyter.version}{' '}
               {result.jupyter.devMode ? 'dev mode' : null} {result.jupyter.mode}
             </div>
-            <div title={result.userAgent}>
-              Browser: {extractBrowserVersion(result.userAgent)}
+            <div>
+              <span title={result.userAgent}>
+                Browser: {extractBrowserVersion(result.userAgent)}
+              </span>
+              , <span title={tagsSummary}>DOM Elements: {totalTags}</span>
             </div>
             <div>CPU cores: {result.hardwareConcurrency}</div>
           </div>
         </div>
         <div className="up-BenchmarkResult-details">
           {benchmark.render ? (
-            <benchmark.render outcome={result.result} />
-          ) : (
-            <LuminoWidget widget={this._table!} />
-          )}
+            <benchmark.render outcome={result.result as any} />
+          ) : this._table ? (
+            <LuminoWidget widget={this._table} />
+          ) : null}
         </div>
       </>
     );
@@ -453,8 +520,7 @@ export class BenchmarkMonitor extends React.Component<
   end: Date | null = null;
 }
 
-interface IBenchmarkResult {
-  result: IOutcome;
+interface IBenchmarkData {
   options: JSONObject;
   benchmark: string;
   scenario: string;
@@ -469,14 +535,21 @@ interface IBenchmarkResult {
   jupyter: IJupyterState;
 }
 
-function benchmarkId(result: Omit<IBenchmarkResult, 'id'>): string {
+interface IBenchmarkResultBase<T extends IOutcome> extends IBenchmarkData {
+  result: T;
+}
+
+type IBenchmarkResult<T extends IOutcome = ITimingOutcome | IProfilingOutcome> =
+  IBenchmarkResultBase<T>;
+
+function benchmarkId(result: Omit<IBenchmarkData, 'id'>): string {
   return [
     result.benchmark,
     result.scenario,
     result.completed.toISOString()
   ].join('_');
 }
-function benchmarkFilename(result: IBenchmarkResult): string {
+function benchmarkFilename(result: IBenchmarkData): string {
   return result.id + '.profile.json';
 }
 
@@ -496,7 +569,9 @@ export class BenchmarkLauncher extends React.Component<
   }
   state: IProfilerState;
 
-  async runBenchmark(scenario: IScenario): Promise<IBenchmarkResult> {
+  async runBenchmark<T extends IOutcome = ITimingOutcome | IProfilingOutcome>(
+    scenario: IScenario
+  ): Promise<IBenchmarkResultBase<T>> {
     // TODO: can we add a simple "lights out" overlay to reduce user interference while the benchmark is running (but do keep showing them progress) without interfering with measurements?
 
     const options = JSONExt.deepCopy({
@@ -506,13 +581,13 @@ export class BenchmarkLauncher extends React.Component<
     scenario.setOptions(options.scenario);
     const benchmark = this.state.benchmark;
     this.props.progress.emit({ percentage: 0 });
-    const result = await benchmark.run(
+    const result = (await benchmark.run(
       scenario,
       options.benchmark,
       this.props.progress
-    );
+    )) as T;
     this.props.progress.emit({ percentage: 100 });
-    const data: Omit<IBenchmarkResult, 'id'> = {
+    const data: Omit<IBenchmarkResultBase<T>, 'id'> = {
       result: result,
       options: options,
       benchmark: benchmark.id,
@@ -565,12 +640,20 @@ export class BenchmarkLauncher extends React.Component<
 
   render(): JSX.Element {
     const benchmarks = this.props.benchmarks.map(benchmark => {
+      const disabled = benchmark.isAvailable ? !benchmark.isAvailable() : false;
       return (
-        <label key={benchmark.id}>
+        <label
+          key={benchmark.id}
+          className={disabled ? 'up-label-disabled' : ''}
+          title={
+            disabled ? 'This benchmark is not available on this browser' : ''
+          }
+        >
           <input
             type="radio"
             checked={this.state.benchmark === benchmark}
             className="up-BenchmarkLauncher-choice-input"
+            disabled={disabled}
             value={benchmark.id}
           />
           {benchmark.name}

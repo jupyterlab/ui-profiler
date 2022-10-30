@@ -210,3 +210,7 @@
 .up-BenchmarkLauncher .jp-mod-styled:disabled {
   opacity: 0.4;
 }
+
+.up-label-disabled {
+  opacity: 0.4;
+}
