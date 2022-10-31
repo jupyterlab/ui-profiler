@@ -17,7 +17,7 @@ import {
 } from './benchmark';
 import { formatTime, IJupyterState, extractBrowserVersion } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
-import { extractTimes } from './jsBenchmarks';
+import { extractTimes, iterateFrames } from './jsBenchmarks';
 import {
   CustomTemplateFactory,
   CustomArrayTemplateFactory,
@@ -45,6 +45,152 @@ interface ILauncherProps extends IProfilerProps {
 
 interface IMonitorProps extends IProfilerProps {
   progress: Signal<any, IProgress>;
+}
+
+namespace ProfileTrace {
+  export interface IProps {
+    trace: ProfilerTrace;
+    itemHeight: number;
+  }
+  export interface IState {
+    scale: {
+      x: number;
+      y: number;
+    };
+    position: {
+      x: number;
+      y: number;
+    };
+    inDrag: boolean;
+  }
+}
+
+export class ProfileTrace extends React.Component<
+  ProfileTrace.IProps,
+  ProfileTrace.IState
+> {
+  constructor(props: ProfileTrace.IProps) {
+    super(props);
+    this.state = {
+      scale: { x: 1, y: 1 },
+      position: { x: 0, y: 0 },
+      inDrag: false
+    };
+    this.handleMouseUp = this.handleMouseUp.bind(this);
+    this.handleMouseDown = this.handleMouseDown.bind(this);
+    this.handleMouseMove = this.handleMouseMove.bind(this);
+    this.handleWheel = this.handleWheel.bind(this);
+  }
+
+  deepest = 0;
+  totalWidth = 100;
+  totalHeight = 100;
+
+  handleWheel(e: React.WheelEvent) {
+    const scale = this.state.scale;
+    const newScale = scale.x - e.deltaY / 100;
+    if (newScale > 0) {
+      this.setState({
+        scale: {
+          x: newScale,
+          y: scale.y
+        }
+      });
+    }
+  }
+
+  handleMouseMove(e: MouseEvent) {
+    if (this.state.inDrag) {
+      const position = this.state.position;
+      this.setState({
+        position: {
+          x: Math.max(
+            Math.min(position.x + e.movementX, 0.99 * this.totalWidth),
+            -0.99 * this.totalWidth
+          ),
+          y: Math.max(
+            Math.min(position.y + e.movementY, 0.5 * this.totalHeight),
+            -0.5 * this.totalHeight
+          )
+        }
+      });
+    }
+  }
+
+  handleMouseUp() {
+    this.setState({ inDrag: false });
+    document.removeEventListener('mousemove', this.handleMouseMove);
+    document.removeEventListener('mouseup', this.handleMouseUp);
+  }
+
+  handleMouseDown() {
+    this.setState({ inDrag: true });
+    document.addEventListener('mousemove', this.handleMouseMove);
+    document.addEventListener('mouseup', this.handleMouseUp);
+  }
+
+  render(): JSX.Element {
+    const { trace, itemHeight } = this.props;
+    if (!trace.samples) {
+      return <div>No samples in trace</div>;
+    }
+    const first = trace.samples[0].timestamp;
+
+    const frameLocations = [...iterateFrames(trace)];
+    this.deepest = Math.max(...frameLocations.map(frame => frame.stackDepth));
+
+    let totalWidth = 0;
+    const frames = frameLocations.map((location, i) => {
+      const frame = trace.frames[location.frameId];
+      const left = (location.start - first) * this.state.scale.x;
+      const width = location.duration * this.state.scale.x;
+      totalWidth = Math.max(totalWidth, left + width);
+      const style = {
+        width: width + 'px',
+        top: (location.stackDepth - 1) * itemHeight * this.state.scale.y + 'px',
+        left: left,
+        height: itemHeight + 'px'
+      };
+      return (
+        <div
+          className={
+            'up-ProfileTrace-frame ' +
+            (typeof frame.resourceId === 'undefined'
+              ? 'up-ProfileTrace-frame-native'
+              : '')
+          }
+          key={'frame-' + i}
+          style={style}
+          title={Statistic.round(location.duration, 1) + 'ms'}
+        >
+          {frame.name}
+        </div>
+      );
+    });
+    this.totalWidth = totalWidth;
+    this.totalHeight =
+      (2 + this.deepest) * this.props.itemHeight * this.state.scale.y;
+
+    // TODO: also show samples as dotted horizontal line with absolute positioning for reference
+    return (
+      <div
+        className="up-ProfileTrace"
+        onWheel={this.handleWheel}
+        style={{ height: this.totalHeight + 'px' }}
+        onMouseDown={this.handleMouseDown}
+      >
+        <div
+          className="up-ProfileTrace-content"
+          style={{
+            transform: `translate(${this.state.position.x}px, ${this.state.position.y}px)`,
+            width: totalWidth + 'px'
+          }}
+        >
+          {frames}
+        </div>
+      </div>
+    );
+  }
 }
 
 interface IProfilerState {
@@ -78,6 +224,7 @@ export function renderProfile(props: {
 }): JSX.Element {
   // Cache the function table.
   const functionWidget = React.useRef<TimingTable | null>(null);
+  const [selectedTrace, setTraceSelection] = React.useState(0);
   if (
     functionWidget.current === null ||
     functionWidget.current.stateSource !== props.outcome
@@ -94,13 +241,17 @@ export function renderProfile(props: {
           ].join('-');
           if (timingId in functionTimings) {
             functionTimings[timingId].times.push(timing.time);
+            functionTimings[timingId].totalTime += timing.time;
+            functionTimings[timingId].calls += 1;
           } else {
             const entry = {
               name: timing.name,
               times: [timing.time],
               resource: timing.resource,
               column: timing.column,
-              line: timing.line
+              line: timing.line,
+              calls: 1,
+              totalTime: timing.time
             };
             functionTimings[timingId] = entry;
           }
@@ -121,14 +272,36 @@ export function renderProfile(props: {
       functionWidget.current = new TimingTable({
         measurements: filteredTimings,
         stateSource: props.outcome,
+        sortColumn: 'totalTime',
         lowerIsBetter: true
       });
     } else {
       functionWidget.current = null;
     }
   }
+  if (selectedTrace > props.outcome.results[0].traces.length) {
+    // reset trace
+    setTraceSelection(0);
+    return <></>;
+  }
   return (
     <>
+      <select
+        value={selectedTrace}
+        onChange={e => {
+          setTraceSelection(Number(e.target.value));
+        }}
+      >
+        {props.outcome.results[0].traces.map((trace, i) => (
+          <option value={i} key={'trace-' + i}>
+            Trace {i} ({trace.samples.length} samples)
+          </option>
+        ))}
+      </select>
+      <ProfileTrace
+        trace={props.outcome.results[0].traces[selectedTrace]}
+        itemHeight={20}
+      />
       {functionWidget.current ? (
         <LuminoWidget widget={functionWidget.current} />
       ) : (
@@ -383,7 +556,15 @@ function profilingSummary(profile: IProfilingOutcome): JSX.Element {
           Statistic.mean(first.traces.map(trace => trace.frames.length)),
           1
         )}
-        , sampling interval: {Statistic.round(first.samplingInterval, 1)}
+        ,{' '}
+        <span
+          title={
+            'Average recorderd: ' +
+            Statistic.round(first.averageSampleInterval, 1)
+          }
+        >
+          sampling interval: {Statistic.round(first.samplingInterval, 1)} ms
+        </span>
       </div>
       <div>Total time: {formatTime(profile.totalTime)}</div>
     </>
@@ -763,7 +944,10 @@ export class BenchmarkLauncher extends React.Component<
                 }
               }}
               className={'jp-mod-styled jp-mod-accept'}
-              disabled={this.state.scenarios.size === 0}
+              disabled={
+                this.state.scenarios.size === 0 ||
+                this.state.benchmarks.size === 0
+              }
             >
               Start
             </button>

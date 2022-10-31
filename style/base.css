@@ -215,3 +215,37 @@
 .up-label-disabled {
   opacity: 0.4;
 }
+
+.up-ProfileTrace {
+  overflow: hidden;
+  user-select: none;
+}
+
+.up-ProfileTrace-content {
+  position: relative;
+  border-top: 1px dashed black;
+  border-bottom: 1px dashed black;
+  height: 100%;
+}
+
+.up-ProfileTrace-frame {
+  position: absolute;
+  background: var(--jp-accent-color3);
+  overflow: hidden;
+  opacity: 0.8;
+  border: 1.5px solid var(--jp-border-color3);
+  display: flex;
+  align-items: center;
+}
+
+.up-ProfileTrace-frame-native {
+  background: var(--jp-brand-color3);
+}
+
+.up-ProfileTrace-frame:hover {
+  opacity: 1;
+}
+
+.up-ProfileTrace-sample {
+  overflow: hidden;
+}

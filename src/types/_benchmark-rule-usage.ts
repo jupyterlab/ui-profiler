@@ -7,11 +7,11 @@
 
 export type NumberOfRepeats = number;
 export type RegularExpressionToFilterOutRules = string;
-export type RegularExpressionToExcludeClassesFromRuleDiscovery = string;
+export type RegularExpressionToFilterOutClassesUsedForRuleDiscovery = string;
 
 export interface StyleRuleUsageOptions {
   repeats?: NumberOfRepeats;
   skipPattern?: RegularExpressionToFilterOutRules;
-  excludeMatchPattern?: RegularExpressionToExcludeClassesFromRuleDiscovery;
+  excludeMatchPattern?: RegularExpressionToFilterOutClassesUsedForRuleDiscovery;
   [k: string]: any;
 }

@@ -125,6 +125,9 @@ export class TimingTable extends ResultTable {
       if (result.source) {
         result['source'] = result['source'].replace('webpack://./', '');
       }
+      if (result['totalTime']) {
+        result['totalTime'] = Statistic.round(result.totalTime, 1);
+      }
       if (result['rulesInBlock']) {
         result['rulesInBlock'] = (
           result['rulesInBlock'] as IRuleDescription[]

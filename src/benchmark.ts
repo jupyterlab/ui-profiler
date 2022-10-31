@@ -54,6 +54,10 @@ export interface IProfileMeasurement extends IMeasurement {
   /**
    * Average actual sampling interval.
    */
+  averageSampleInterval: number;
+  /**
+   * Sampling interval reported by profiler.
+   */
   samplingInterval: number;
 }
 
@@ -95,12 +99,14 @@ export async function profile(
   const traces = [];
   const errors = [];
 
+  let profiler: Profiler;
+
   if (mode === 'micro') {
     for (let i = 0; i < n; i++) {
       if (scenario.setup) {
         await scenario.setup();
       }
-      const profiler = new window.Profiler(options);
+      profiler = new window.Profiler(options);
       try {
         await scenario.run();
       } catch (e) {
@@ -115,7 +121,7 @@ export async function profile(
       afterMicroStep(i);
     }
   } else {
-    const profiler = new window.Profiler(options);
+    profiler = new window.Profiler(options);
     for (let i = 0; i < n; i++) {
       if (scenario.setup) {
         await scenario.setup();
@@ -138,7 +144,8 @@ export async function profile(
   return {
     traces,
     errors,
-    samplingInterval: Statistic.mean(
+    samplingInterval: profiler!.sampleInterval,
+    averageSampleInterval: Statistic.mean(
       traces
         .map(trace => {
           let previous = trace.samples[0].timestamp;

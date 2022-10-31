@@ -22,28 +22,58 @@ interface IFunctionTiming {
   readonly resource?: string;
 }
 
-export function extractTimes(trace: ProfilerTrace): IFunctionTiming[] {
-  let runningFrames: Map<number, number> = new Map();
-  const totalFrameTime: Map<number, number> = new Map();
+interface IFrameState {
+  start: number;
+  stackDepth: number;
+  frameId: number;
+}
+
+export interface IFrameLocation extends IFrameState {
+  duration: number;
+}
+
+export function* iterateFrames(
+  trace: ProfilerTrace
+): Generator<IFrameLocation> {
+  let runningFrames: Map<string, IFrameState> = new Map();
   for (const sample of trace.samples) {
     const now = sample.timestamp;
     // when undefined, the stack was empty -> mark all currently running functions as done
-    let completedFrames: number[];
+    let completedFrames: string[];
     const previouslyRunningFrames = [...runningFrames.keys()];
-    const activeFrames = new Map();
+    const activeFrames = new Map<string, IFrameState>();
     if (typeof sample.stackId === 'undefined') {
       completedFrames = [...previouslyRunningFrames];
     } else {
       let stack: ProfilerStack | null = trace.stacks[sample.stackId];
+
+      let staskSize = 0;
       while (stack) {
+        stack =
+          typeof stack.parentId !== 'undefined'
+            ? trace.stacks[stack.parentId]
+            : null;
+        staskSize++;
+      }
+
+      let depth = 0;
+      stack = trace.stacks[sample.stackId];
+      while (stack) {
+        const inverseDepth = staskSize - depth;
+        const blockId = stack.frameId + '-' + inverseDepth;
         activeFrames.set(
-          stack.frameId,
-          runningFrames.get(stack.frameId) ?? now
+          blockId,
+          runningFrames.get(blockId) ?? {
+            start: now,
+            stackDepth: inverseDepth,
+            frameId: stack.frameId
+          }
         );
         stack =
           typeof stack.parentId !== 'undefined'
             ? trace.stacks[stack.parentId]
             : null;
+        depth++;
       }
       completedFrames = [...previouslyRunningFrames].filter(
         a => !activeFrames.has(a)
@@ -51,12 +81,25 @@ export function extractTimes(trace: ProfilerTrace): IFunctionTiming[] {
     }
 
     for (const frameId of completedFrames) {
-      const start = runningFrames.get(frameId)!;
-      const time = now - start;
-      totalFrameTime.set(frameId, totalFrameTime.get(frameId) || 0 + time);
+      const state = runningFrames.get(frameId)!;
+      const time = now - state.start;
+      yield {
+        duration: time,
+        ...state
+      };
       runningFrames.delete(frameId);
     }
     runningFrames = activeFrames;
+  }
+}
+
+export function extractTimes(trace: ProfilerTrace): IFunctionTiming[] {
+  const totalFrameTime: Map<number, number> = new Map();
+  for (const frameData of iterateFrames(trace)) {
+    totalFrameTime.set(
+      frameData.frameId,
+      totalFrameTime.get(frameData.frameId) || 0 + frameData.duration
+    );
   }
 
   return [...totalFrameTime.entries()].map(([frameId, time]) => {

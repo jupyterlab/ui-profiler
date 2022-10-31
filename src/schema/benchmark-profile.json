@@ -17,7 +17,7 @@
     },
     "sampleInterval": {
       "title": "Sample interval",
-      "description": "Sampling interval (in milliseconds). Browsers are not required to take samples at this rate and may increase it (for example for privacy protection).",
+      "description": "Sampling interval (in milliseconds). Browsers are not required to take samples at this rate and may increase it (Chrome uses 16ms on Windows and 10ms elsewhere).",
       "type": "integer",
       "exclusiveMinimum": 0,
       "default": 5
