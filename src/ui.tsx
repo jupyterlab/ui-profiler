@@ -48,7 +48,7 @@ interface IMonitorProps extends IProfilerProps {
 }
 
 interface IProfilerState {
-  benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>;
+  benchmarks: Set<IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>>;
   scenarios: Set<IScenario>;
   /**
    * Field template
@@ -68,7 +68,9 @@ interface IConfigValue {
   scenarios: {
     [id: string]: JSONObject;
   };
-  benchmark: JSONObject;
+  benchmarks: {
+    [id: string]: JSONObject;
+  };
 }
 
 export function renderProfile(props: {
@@ -561,7 +563,7 @@ export class BenchmarkLauncher extends React.Component<
   constructor(props: ILauncherProps) {
     super(props);
     this.state = {
-      benchmark: props.benchmarks[0],
+      benchmarks: new Set([props.benchmarks[0]]),
       scenarios: new Set([props.scenarios[0]]),
       fieldTemplate: CustomTemplateFactory(this.props.translator),
       arrayFieldTemplate: CustomArrayTemplateFactory(this.props.translator),
@@ -571,16 +573,16 @@ export class BenchmarkLauncher extends React.Component<
   state: IProfilerState;
 
   async runBenchmark<T extends IOutcome = ITimingOutcome | IProfilingOutcome>(
-    scenario: IScenario
+    scenario: IScenario,
+    benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>
   ): Promise<IBenchmarkResultBase<T>> {
     // TODO: can we add a simple "lights out" overlay to reduce user interference while the benchmark is running (but do keep showing them progress) without interfering with measurements?
 
     const options = JSONExt.deepCopy({
       scenario: this._config.scenarios[scenario.id],
-      benchmark: this._config.benchmark
+      benchmark: this._config.benchmarks[benchmark.id]
     } as any);
     scenario.setOptions(options.scenario);
-    const benchmark = this.state.benchmark;
     this.props.progress.emit({ percentage: 0 });
     const result = (await benchmark.run(
       scenario,
@@ -616,8 +618,14 @@ export class BenchmarkLauncher extends React.Component<
     if (!matched) {
       throw Error(`Benchmark not matched ${event.target.value}`);
     }
+    const activeBenchmarks = this.state.benchmarks;
+    if (event.target.checked) {
+      activeBenchmarks.add(matched);
+    } else {
+      activeBenchmarks.delete(matched);
+    }
     this.setState({
-      benchmark: matched
+      benchmarks: activeBenchmarks
     });
   }
 
@@ -651,8 +659,8 @@ export class BenchmarkLauncher extends React.Component<
           }
         >
           <input
-            type="radio"
-            checked={this.state.benchmark === benchmark}
+            type="checkbox"
+            checked={this.state.benchmarks.has(benchmark)}
             className="up-BenchmarkLauncher-choice-input"
             disabled={disabled}
             value={benchmark.id}
@@ -689,17 +697,23 @@ export class BenchmarkLauncher extends React.Component<
               {benchmarks}
             </div>
             <div className="up-BenchmarkLauncher-forms">
-              <Form
-                schema={this.state.benchmark.configSchema}
-                idPrefix={'up-profiler-benchmark'}
-                onChange={form => {
-                  this._config.benchmark = form.formData as JSONObject;
-                }}
-                FieldTemplate={this.state.fieldTemplate}
-                ArrayFieldTemplate={this.state.arrayFieldTemplate}
-                ObjectFieldTemplate={this.state.objectFieldTemplate}
-                liveValidate
-              />
+              {[...this.state.benchmarks].map(benchmark => {
+                return (
+                  <Form
+                    key={'up-profiler-benchmark-' + benchmark.id}
+                    schema={benchmark.configSchema}
+                    idPrefix={'up-profiler-benchmark'}
+                    onChange={form => {
+                      this._config.benchmarks[benchmark.id] =
+                        form.formData as JSONObject;
+                    }}
+                    FieldTemplate={this.state.fieldTemplate}
+                    ArrayFieldTemplate={this.state.arrayFieldTemplate}
+                    ObjectFieldTemplate={this.state.objectFieldTemplate}
+                    liveValidate
+                  />
+                );
+              })}
             </div>
           </div>
           <div className="up-BenchmarkLauncher-card">
@@ -735,15 +749,17 @@ export class BenchmarkLauncher extends React.Component<
             <h4 className="up-card-heading">Run</h4>
             <button
               onClick={async () => {
-                for (const scenario of this.state.scenarios) {
-                  const result = await this.runBenchmark(scenario);
-                  const filename = benchmarkFilename(result);
-                  this.props.upload(
-                    new File(JSON.stringify(result).split('\n'), filename, {
-                      type: 'application/json'
-                    })
-                  );
-                  this.props.onResult(result);
+                for (const benchmark of this.state.benchmarks) {
+                  for (const scenario of this.state.scenarios) {
+                    const result = await this.runBenchmark(scenario, benchmark);
+                    const filename = benchmarkFilename(result);
+                    this.props.upload(
+                      new File(JSON.stringify(result).split('\n'), filename, {
+                        type: 'application/json'
+                      })
+                    );
+                    this.props.onResult(result);
+                  }
                 }
               }}
               className={'jp-mod-styled jp-mod-accept'}
@@ -760,6 +776,6 @@ export class BenchmarkLauncher extends React.Component<
 
   protected _config: IConfigValue = {
     scenarios: {},
-    benchmark: {}
+    benchmarks: {}
   };
 }
