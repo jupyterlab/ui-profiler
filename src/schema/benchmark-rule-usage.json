@@ -1,0 +1,22 @@
+{
+  "title": "Style Rule Usage Options",
+  "type": "object",
+  "properties": {
+    "repeats": {
+      "title": "Number of repeats",
+      "type": "integer",
+      "minimum": 1,
+      "default": 5
+    },
+    "skipPattern": {
+      "title": "Regular expression to filter out rules",
+      "type": "string",
+      "default": "::"
+    },
+    "excludeMatchPattern": {
+      "title": "Regular expression to filter out classes used for rule discovery",
+      "type": "string",
+      "default": "(fa-|jp-icon|Icon|lm-Widget|lm-mod-|jp-mod-|p-mod-|p-Widget)"
+    }
+  }
+}

@@ -418,6 +418,7 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
         this._table = new TimingTable({
           measurements: (result.result as ITimingOutcome).results,
           reference: (result.result as ITimingOutcome).reference,
+          sortColumn: benchmark.sortColumn,
           stateSource: null,
           lowerIsBetter: false
         });

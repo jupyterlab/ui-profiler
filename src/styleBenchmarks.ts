@@ -7,18 +7,25 @@ import {
   IBenchmark,
   benchmark
 } from './benchmark';
-import { reportTagCounts, shuffled } from './utils';
+import { reportTagCounts, shuffled, iterateAffectedNodes } from './utils';
 import { layoutReady } from './dramaturg';
-import { IRuleDescription, extractSourceMap, collectRules } from './css';
+import {
+  IRuleData,
+  IRuleDescription,
+  extractSourceMap,
+  collectRules
+} from './css';
 import { renderBlockResult } from './ui';
 
 import benchmarkOptionsSchema from './schema/benchmark-base.json';
 import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';
 import benchmarkRuleGroupOptionsSchema from './schema/benchmark-rule-group.json';
+import benchmarkRuleUsageOptionsSchema from './schema/benchmark-rule-usage.json';
 
 import type { BenchmarkOptions } from './types/_benchmark-base';
 import type { StyleRuleBenchmarkOptions } from './types/_benchmark-rule';
 import type { StyleRuleGroupBenchmarkOptions } from './types/_benchmark-rule-group';
+import type { StyleRuleUsageOptions } from './types/_benchmark-rule-usage';
 
 interface IStylesheetResult extends ITimeMeasurement {
   content: string | null;
@@ -50,6 +57,156 @@ export interface IRuleBlockResult extends ITimeMeasurement {
    */
   randomization: number;
 }
+
+export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
+  {
+    id: 'rule-usage',
+    name: 'Style Rule Usage',
+    configSchema: benchmarkRuleUsageOptionsSchema as JSONSchema7,
+    run: async (
+      scenario: IScenario,
+      options: StyleRuleUsageOptions = {},
+      progress
+    ): Promise<ITimingOutcome<IRuleResult>> => {
+      const n = options.repeats || 3;
+      const start = Date.now();
+      const skipPattern = options.skipPattern
+        ? new RegExp(options.skipPattern, 'g')
+        : undefined;
+      const excludePattern = options.excludeMatchPattern
+        ? new RegExp(options.excludeMatchPattern, 'g')
+        : undefined;
+
+      const styles = [...document.querySelectorAll('style')];
+
+      if (scenario.setupSuite) {
+        await scenario.setupSuite();
+      }
+      const reference = await benchmark(scenario, n, true);
+      console.log('Reference for', scenario.name, 'is:', reference);
+
+      const observeEverythingConfig = {
+        subtree: true,
+        childList: true,
+        attributes: true
+      };
+      const relevantNodes = new Set<Node>();
+      const collect: MutationCallback = mutations => {
+        for (const node of iterateAffectedNodes(mutations)) {
+          relevantNodes.add(node);
+        }
+      };
+      const collectingObserver = new MutationObserver(collect);
+
+      await layoutReady();
+
+      // Execute action to determine relevant nodes.
+      collectingObserver.observe(document.body, observeEverythingConfig);
+      await benchmark(scenario, n, true);
+      await layoutReady();
+      collect(collectingObserver.takeRecords(), collectingObserver);
+      collectingObserver.disconnect();
+
+      console.log('Relevant nodes:', relevantNodes);
+      const relevantElements = [...relevantNodes].filter(
+        node => node instanceof Element
+      ) as Element[];
+      const filteredElements = relevantElements.filter(
+        element => element.tagName.toLocaleLowerCase() !== 'body'
+      );
+      const relevantClassNames = new Set([
+        ...filteredElements
+          .map(element => [...element.classList.values()])
+          .flat()
+          .filter(rule => !excludePattern || !rule.match(excludePattern))
+      ]);
+      const relevantIds = filteredElements
+        .filter(element => element.id)
+        .map(element => element.id);
+      console.log('Relevant class names:', relevantClassNames);
+      console.log('Relevant IDs:', relevantIds);
+
+      const results: IRuleResult[] = [];
+      const allRules = await collectRules(styles, { skipPattern });
+      const relevantRules = new Set<IRuleData>();
+      for (const rule of allRules) {
+        for (const className of relevantClassNames) {
+          if (rule.selector.includes('.' + className)) {
+            relevantRules.add(rule);
+            break;
+          }
+        }
+        for (const id of relevantIds) {
+          if (rule.selector.includes('#' + id)) {
+            relevantRules.add(rule);
+            break;
+          }
+        }
+      }
+
+      const rules = [...relevantRules];
+      progress?.emit({ percentage: (100 * 0.5) / rules.length });
+
+      const matches = new Map<string, number>();
+
+      const recordMatches: MutationCallback = mutations => {
+        const touchedNodes = new Set<Node>();
+        for (const node of iterateAffectedNodes(mutations)) {
+          touchedNodes.add(node);
+        }
+        for (const node of touchedNodes) {
+          if (!(node instanceof HTMLElement)) {
+            continue;
+          }
+          for (const rule of relevantRules) {
+            if (node.matches(rule.selector)) {
+              matches.set(rule.selector, (matches.get(rule.selector) || 0) + 1);
+            }
+          }
+        }
+      };
+      const recordingObserver = new MutationObserver(recordMatches);
+
+      // Count number of nodes matching the relevant rules.
+      recordingObserver.observe(document.body, observeEverythingConfig);
+      await benchmark(scenario, n, true);
+      await layoutReady();
+      recordMatches(recordingObserver.takeRecords(), recordingObserver);
+      recordingObserver.disconnect();
+
+      for (let i = 0; i < rules.length; i++) {
+        progress?.emit({ percentage: (100 * (i + 0.5)) / rules.length });
+        const rule = rules[i];
+        // benchmark without the rule
+        rule.sheet.deleteRule(rule.ruleIndex);
+        await layoutReady();
+        const measurements = await benchmark(scenario, n, true);
+        results.push({
+          ...measurements,
+          selector: rule.selector,
+          source: rule.source,
+          ruleIndex: rule.ruleIndex,
+          stylesheetIndex: rule.stylesheetIndex,
+          matches: matches.get(rule.selector) || 0
+        });
+        // restore the rule
+        rule.sheet.insertRule(rule.rule.cssText, rule.ruleIndex);
+        await layoutReady();
+      }
+      if (scenario.cleanupSuite) {
+        await scenario.cleanupSuite();
+      }
+      progress?.emit({ percentage: 100 });
+      return {
+        results: results,
+        reference: reference.times,
+        tags: reportTagCounts(),
+        totalTime: Date.now() - start,
+        type: 'time'
+      };
+    },
+    sortColumn: 'matches'
+  };
 
 export const styleSheetsBenchmark: IBenchmark<
   ITimingOutcome<IStylesheetResult>

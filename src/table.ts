@@ -34,7 +34,7 @@ class MouseHandler extends BasicMouseHandler {
       }
     }
 
-    super.onMouseDown(grid, event);
+    super.onMouseUp(grid, event);
   }
 
   private _clicked = new Signal<this, DataGrid.HitTestResult>(this);
@@ -77,6 +77,7 @@ interface ITimingTableOptions {
    * Worse results will be shown at the top of the table.
    */
   lowerIsBetter: boolean;
+  sortColumn?: string;
 }
 
 export class TimingTable extends ResultTable {
@@ -142,6 +143,7 @@ export class TimingTable extends ResultTable {
     }
     this.results = results;
     this.columnNames = Object.keys(first);
+    this.sortColumn = options.sortColumn || 'IQM';
     this.sortOrder = options.lowerIsBetter ? 'ascending' : 'descending';
     this._setupDataModel();
   }
@@ -188,6 +190,6 @@ export class TimingTable extends ResultTable {
     }
   }
   protected results: ITimeMeasurement[];
-  protected sortColumn = 'IQM';
+  protected sortColumn: string;
   protected sortOrder: 'ascending' | 'descending' = 'ascending';
 }

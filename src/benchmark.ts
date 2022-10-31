@@ -36,6 +36,7 @@ export interface IBenchmark<T extends IOutcomeBase = IOutcomeBase> {
    * If not defined, the benchmark is assumed to be available.
    */
   isAvailable?: () => boolean;
+  sortColumn?: string;
 }
 
 interface IMeasurement {
@@ -59,20 +60,19 @@ export interface IProfileMeasurement extends IMeasurement {
 export interface IOutcomeBase<T extends IMeasurement = IMeasurement> {
   results: T[];
   tags: Record<string, number>;
+  totalTime: number;
   type: string;
 }
 
 export interface ITimingOutcome<T extends ITimeMeasurement = ITimeMeasurement>
   extends IOutcomeBase<T> {
   reference: number[];
-  totalTime: number;
   type: 'time';
 }
 
 export interface IProfilingOutcome<
   T extends IProfileMeasurement = IProfileMeasurement
 > extends IOutcomeBase<T> {
-  totalTime: number;
   type: 'profile';
 }
 

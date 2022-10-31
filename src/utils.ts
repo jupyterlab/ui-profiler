@@ -68,3 +68,36 @@ export function extractBrowserVersion(userAgent: string): string {
   }
   return 'Unknown browser';
 }
+
+export function* iterateSubtree(node: Node): Generator<Node> {
+  for (const child of node.childNodes) {
+    yield child;
+    yield* iterateSubtree(child);
+  }
+}
+
+export function* iterateAffectedNodes(
+  mutations: MutationRecord[]
+): Generator<Node> {
+  for (const mutation of mutations) {
+    yield mutation.target;
+    for (const node of mutation.addedNodes) {
+      if (node === document.body) {
+        continue;
+      }
+      yield node;
+      for (const child of iterateSubtree(node)) {
+        yield child;
+      }
+    }
+    for (const node of mutation.removedNodes) {
+      if (node === document.body) {
+        continue;
+      }
+      yield node;
+      for (const child of iterateSubtree(node)) {
+        yield child;
+      }
+    }
+  }
+}

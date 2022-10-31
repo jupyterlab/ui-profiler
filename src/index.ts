@@ -14,7 +14,8 @@ import { UIProfiler } from './ui';
 import {
   styleSheetsBenchmark,
   styleRuleBenchmark,
-  styleRuleGroupBenchmark
+  styleRuleGroupBenchmark,
+  styleRuleUsageBenchmark
 } from './styleBenchmarks';
 import { selfProfileBenchmark } from './jsBenchmarks';
 import {
@@ -52,6 +53,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         styleSheetsBenchmark,
         styleRuleBenchmark,
         styleRuleGroupBenchmark,
+        styleRuleUsageBenchmark,
         selfProfileBenchmark
       ] as (IBenchmark<ITimingOutcome<any>> | IBenchmark<IProfilingOutcome>)[],
       scenarios: [
