@@ -22,21 +22,45 @@ export interface IProgress {
 }
 
 export interface IBenchmark<T extends IOutcomeBase = IOutcomeBase> {
+  /**
+   * Unique identifier.
+   */
   id: string;
+  /**
+   * User-facing name of the benchmark.
+   */
   name: string;
+  /**
+   * Function excuting the benchmark for given scenario.
+   * @param scenario - the scenario to execute.
+   * @param options - the JSON data from rjsf form generated from `configSchema`.
+   */
   run: (
     scenario: IScenario,
     options: any,
     progress?: Signal<any, IProgress>
   ) => Promise<T>;
+  /**
+   * Configuration schema for rendering by rjsf.
+   */
   configSchema: JSONSchema7;
+  /**
+   * Custom renderer for results.
+   */
   render?: (props: { outcome: T }) => JSX.Element;
   /**
    * Checks whether the benchmark can be executed on runing browser.
    * If not defined, the benchmark is assumed to be available.
    */
   isAvailable?: () => boolean;
+  /**
+   * Column to sort results by when presenting in a table.
+   */
   sortColumn?: string;
+  /**
+   * Brief (one-two sentences) explanation how to interpret the results.
+   */
+  interpretation?: string;
 }
 
 interface IMeasurement {
@@ -178,11 +202,11 @@ export async function benchmark(
     const start = performance.now();
     try {
       await scenario.run();
+      times.push(performance.now() - start);
     } catch (e) {
       console.error('Benchmark failed in scenario', scenario, e);
       errors.push(e);
     }
-    times.push(performance.now() - start);
 
     if (scenario.cleanup) {
       await scenario.cleanup();
