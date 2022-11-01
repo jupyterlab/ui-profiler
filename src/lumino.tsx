@@ -16,7 +16,7 @@ export const LuminoWidget = (props: ILuminoWidget): JSX.Element => {
     const observer = new ResizeObserver(entries => {
       updateSize();
     });
-    observer.observe(ref.current!.parentElement!);
+    observer.observe(ref.current!);
     return () => {
       Widget.detach(widget);
       observer.disconnect();
