@@ -81,7 +81,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
           mode: PageConfig.getOption('mode') as DockPanel.Mode
         };
         return state;
-      }
+      },
+      resultLocation: '/ui-profiler-results/'
     };
     const content = new UIProfiler(options);
     const widget = new MainAreaWidget({ content });

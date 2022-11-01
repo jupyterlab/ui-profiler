@@ -12,7 +12,7 @@
   grid-template:
     'launcher launcher'
     'history result';
-  grid-template-columns: min-content 1fr;
+  grid-template-columns: minmax(100px, min-content) minmax(200px, 1fr);
   grid-template-rows: 0fr 1fr;
 }
 
@@ -26,7 +26,7 @@
 
 .up-BenchmarkLauncher-cards {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   overflow: hidden;
   height: 100%;
 }
@@ -56,16 +56,29 @@
   display: none;
 }
 
-.up-BenchmarkLauncher fieldset {
+.up-BenchmarkLauncher-forms fieldset {
   border: 0;
   margin: 0;
   padding: 0;
 }
 
-.up-BenchmarkLauncher fieldset legend {
+.up-BenchmarkLauncher-forms fieldset legend {
   border: 0;
   margin: 0;
   padding: 0;
+}
+
+.up-BenchmarkLauncher-forms .jp-root > fieldset > legend {
+  font-size: var(--jp-ui-font-size1);
+  font-weight: 600;
+}
+
+.up-BenchmarkLauncher-forms .jp-FormGroup-content {
+  margin-bottom: 6px;
+}
+
+.up-BenchmarkLauncher-forms .rjsf {
+  margin-bottom: 8px;
 }
 
 .up-BenchmarkLauncher-choices
@@ -95,6 +108,7 @@
 
 .up-BenchmarkLauncher-choices {
   margin-bottom: 8px;
+  user-select: none;
 }
 
 .up-BenchmarkMonitor .jp-Statusbar-ProgressBar-progress-bar {
@@ -159,11 +173,10 @@
 }
 
 .up-BenchmarkMonitor {
-  position: sticky;
-  padding: 8px;
-  width: 85%;
+  width: 100%;
   margin: auto;
-  bottom: 0;
+  padding-right: 18px;
+  box-sizing: border-box;
 }
 
 .up-widget-heading {
@@ -188,7 +201,8 @@
 }
 
 .up-BenchmarkMonitor-content {
-  background: var(--jp-layout-color0);
+  display: grid;
+  grid-template-rows: 1fr 1fr;
 }
 
 .up-BenchmarkResult-benchmarkInfo {
@@ -219,6 +233,7 @@
 .up-ProfileTrace {
   overflow: hidden;
   user-select: none;
+  resize: vertical;
 }
 
 .up-ProfileTrace-content {
@@ -248,4 +263,26 @@
 
 .up-ProfileTrace-sample {
   overflow: hidden;
+}
+
+.up-BenchmarkLauncher-launchbar {
+  position: sticky;
+  width: 100%;
+  margin: auto;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 85% 1fr;
+  padding: 10px;
+  box-sizing: border-box;
+  padding-bottom: 8px;
+}
+
+.up-BenchmarkLauncher-launchbar-buttons {
+  display: flex;
+  flex-direction: column;
+}
+
+.up-BenchmarkMonitor,
+.up-BenchmarkLauncher-launchbar-buttons {
+  backdrop-filter: blur(10px);
 }

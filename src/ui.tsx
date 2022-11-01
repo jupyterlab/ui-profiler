@@ -1,10 +1,11 @@
 import Form from '@rjsf/core';
 import React from 'react';
-import { ReactWidget, UseSignal } from '@jupyterlab/apputils';
+import { ReactWidget, UseSignal, showErrorMessage } from '@jupyterlab/apputils';
 import { Contents, ServiceManager } from '@jupyterlab/services';
 import { ProgressBar } from '@jupyterlab/statusbar';
 import { ITranslator } from '@jupyterlab/translation';
 import { JSONExt, JSONObject } from '@lumino/coreutils';
+import { PathExt } from '@jupyterlab/coreutils';
 import { Signal, ISignal } from '@lumino/signaling';
 import {
   IBenchmark,
@@ -35,12 +36,14 @@ interface IProfilerProps {
    */
   translator: ITranslator;
   upload: (file: File) => Promise<Contents.IModel>;
+  resultLocation: string;
   getJupyterState: () => IJupyterState;
 }
 
 interface ILauncherProps extends IProfilerProps {
   progress: Signal<any, IProgress>;
   onResult: (result: IBenchmarkResult) => void;
+  resultLocation: string;
 }
 
 interface IMonitorProps extends IProfilerProps {
@@ -103,6 +106,7 @@ export class ProfileTrace extends React.Component<
     if (this.state.inDrag) {
       const position = this.state.position;
       this.setState({
+        // TODO: the constraints should use actual width/height from bounding rect since user can arbitrarily resize the contener
         position: {
           x: Math.max(
             Math.min(position.x + e.movementX, 0.99 * this.totalWidth),
@@ -183,7 +187,8 @@ export class ProfileTrace extends React.Component<
           className="up-ProfileTrace-content"
           style={{
             transform: `translate(${this.state.position.x}px, ${this.state.position.y}px)`,
-            width: totalWidth + 'px'
+            width: totalWidth + 'px',
+            height: this.totalHeight + 'px'
           }}
         >
           {frames}
@@ -194,8 +199,8 @@ export class ProfileTrace extends React.Component<
 }
 
 interface IProfilerState {
-  benchmarks: Set<IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>>;
-  scenarios: Set<IScenario>;
+  benchmarks: Array<IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>>;
+  scenarios: Array<IScenario>;
   /**
    * Field template
    */
@@ -208,6 +213,10 @@ interface IProfilerState {
    * Object Field template
    */
   objectFieldTemplate?: ReturnType<typeof CustomObjectTemplateFactory>;
+  /**
+   * Is any benchmark currently running?
+   */
+  isRunning: boolean;
 }
 
 interface IConfigValue {
@@ -392,6 +401,9 @@ export class UIProfiler extends ReactWidget {
     this.loadResult = this.loadResult.bind(this);
     this.manager = new ServiceManager();
     this.resultAdded = new Signal(this);
+    this.manager.contents.save(this.props.resultLocation, {
+      type: 'directory'
+    });
   }
   handleResult(result: IBenchmarkResult): void {
     this.result = result;
@@ -441,6 +453,7 @@ interface IHistoryProps {
   manager: ServiceManager;
   onSelect: (file: Contents.IModel) => void;
   resultAdded: ISignal<any, IBenchmarkResult>;
+  resultLocation: string;
 }
 
 interface IHistoryState {
@@ -469,7 +482,9 @@ export class BenchmarkHistory extends React.Component<
   }
 
   async update(): Promise<void> {
-    const dirModel = await this.props.manager.contents.get('.');
+    const dirModel = await this.props.manager.contents.get(
+      this.props.resultLocation
+    );
     const files = dirModel.content.filter((a: Contents.IModel) =>
       a.path.endsWith('.profile.json')
     );
@@ -496,7 +511,7 @@ export class BenchmarkHistory extends React.Component<
     const list = this.state.files.map(file => (
       <li
         className={
-          this.state.current === file.path
+          this.state.current === file.name
             ? 'up-BenchmarkHistory-file up-BenchmarkHistory-file-active'
             : 'up-BenchmarkHistory-file'
         }
@@ -563,7 +578,7 @@ function profilingSummary(profile: IProfilingOutcome): JSX.Element {
             Statistic.round(first.averageSampleInterval, 1)
           }
         >
-          sampling interval: {Statistic.round(first.samplingInterval, 1)} ms
+          . Sampling interval: {Statistic.round(first.samplingInterval, 1)} ms
         </span>
       </div>
       <div>Total time: {formatTime(profile.totalTime)}</div>
@@ -640,6 +655,12 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
           </div>
         </div>
         <div className="up-BenchmarkResult-details">
+          {benchmark.interpretation ? (
+            <details>
+              <summary>Interpretation</summary>
+              {benchmark.interpretation}
+            </details>
+          ) : null}
           {benchmark.render ? (
             <benchmark.render outcome={result.result as any} />
           ) : this._table ? (
@@ -737,6 +758,19 @@ function benchmarkFilename(result: IBenchmarkData): string {
   return result.id + '.profile.json';
 }
 
+function OptionsStub(props: { name: string }): JSX.Element {
+  return (
+    <div className="rjsf">
+      <div className="jp-root">
+        <fieldset>
+          <legend>{props.name} configuration</legend>
+          No options available for {props.name}.
+        </fieldset>
+      </div>
+    </div>
+  );
+}
+
 export class BenchmarkLauncher extends React.Component<
   ILauncherProps,
   IProfilerState
@@ -744,24 +778,27 @@ export class BenchmarkLauncher extends React.Component<
   constructor(props: ILauncherProps) {
     super(props);
     this.state = {
-      benchmarks: new Set([props.benchmarks[0]]),
-      scenarios: new Set([props.scenarios[0]]),
+      benchmarks: [props.benchmarks[0]],
+      scenarios: [props.scenarios[0]],
       fieldTemplate: CustomTemplateFactory(this.props.translator),
       arrayFieldTemplate: CustomArrayTemplateFactory(this.props.translator),
-      objectFieldTemplate: CustomObjectTemplateFactory(this.props.translator)
+      objectFieldTemplate: CustomObjectTemplateFactory(this.props.translator),
+      isRunning: false
     };
+    this.runSelected = this.runSelected.bind(this);
   }
   state: IProfilerState;
 
   async runBenchmark<T extends IOutcome = ITimingOutcome | IProfilingOutcome>(
     scenario: IScenario,
-    benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>
+    benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>,
+    config: IConfigValue
   ): Promise<IBenchmarkResultBase<T>> {
     // TODO: can we add a simple "lights out" overlay to reduce user interference while the benchmark is running (but do keep showing them progress) without interfering with measurements?
 
     const options = JSONExt.deepCopy({
-      scenario: this._config.scenarios[scenario.id],
-      benchmark: this._config.benchmarks[benchmark.id]
+      scenario: config.scenarios[scenario.id],
+      benchmark: config.benchmarks[benchmark.id]
     } as any);
     scenario.setOptions(options.scenario);
     this.props.progress.emit({ percentage: 0 });
@@ -799,12 +836,16 @@ export class BenchmarkLauncher extends React.Component<
     if (!matched) {
       throw Error(`Benchmark not matched ${event.target.value}`);
     }
-    const activeBenchmarks = this.state.benchmarks;
+    let activeBenchmarks = [...this.state.benchmarks];
     if (event.target.checked) {
-      activeBenchmarks.add(matched);
+      activeBenchmarks.push(matched);
     } else {
-      activeBenchmarks.delete(matched);
+      activeBenchmarks = activeBenchmarks.filter(b => b.id !== matched.id);
     }
+    const referenceOrder = this.props.benchmarks.map(s => s.id);
+    activeBenchmarks.sort(
+      (a, b) => referenceOrder.indexOf(a.id) - referenceOrder.indexOf(b.id)
+    );
     this.setState({
       benchmarks: activeBenchmarks
     });
@@ -817,14 +858,51 @@ export class BenchmarkLauncher extends React.Component<
     if (!matched) {
       throw Error(`Scenario not matched ${event.target.value}`);
     }
-    const activeScenarios = this.state.scenarios;
+    let activeScenarios = [...this.state.scenarios];
     if (event.target.checked) {
-      activeScenarios.add(matched);
+      activeScenarios.push(matched);
     } else {
-      activeScenarios.delete(matched);
+      activeScenarios = activeScenarios.filter(s => s.id !== matched.id);
     }
+    const referenceOrder = this.props.scenarios.map(s => s.id);
+    activeScenarios.sort(
+      (a, b) => referenceOrder.indexOf(a.id) - referenceOrder.indexOf(b.id)
+    );
     this.setState({
       scenarios: activeScenarios
+    });
+  }
+
+  async runSelected(): Promise<void> {
+    this.setState({
+      isRunning: true
+    });
+    try {
+      // copy to prevent user inadertedly changing what is being run
+      const scheduledBenchmarks = [...this.state.benchmarks];
+      const scheduledScenarios = [...this.state.scenarios];
+      const config = JSONExt.deepCopy(this._config as any) as IConfigValue;
+      for (const benchmark of scheduledBenchmarks) {
+        for (const scenario of scheduledScenarios) {
+          const result = await this.runBenchmark(scenario, benchmark, config);
+          const filename = benchmarkFilename(result);
+          this.props.upload(
+            new File(
+              JSON.stringify(result).split('\n'),
+              PathExt.join(this.props.resultLocation, filename),
+              {
+                type: 'application/json'
+              }
+            )
+          );
+          this.props.onResult(result);
+        }
+      }
+    } catch (e) {
+      void showErrorMessage('Benchmark failed', e);
+    }
+    this.setState({
+      isRunning: false
     });
   }
 
@@ -841,7 +919,7 @@ export class BenchmarkLauncher extends React.Component<
         >
           <input
             type="checkbox"
-            checked={this.state.benchmarks.has(benchmark)}
+            checked={this.state.benchmarks.includes(benchmark)}
             className="up-BenchmarkLauncher-choice-input"
             disabled={disabled}
             value={benchmark.id}
@@ -855,7 +933,7 @@ export class BenchmarkLauncher extends React.Component<
         <label key={scenario.id}>
           <input
             type="checkbox"
-            checked={this.state.scenarios.has(scenario)}
+            checked={this.state.scenarios.includes(scenario)}
             className="up-BenchmarkLauncher-choice-input"
             value={scenario.id}
           />
@@ -878,7 +956,13 @@ export class BenchmarkLauncher extends React.Component<
               {benchmarks}
             </div>
             <div className="up-BenchmarkLauncher-forms">
-              {[...this.state.benchmarks].map(benchmark => {
+              {this.state.benchmarks.map(benchmark => {
+                const properties = benchmark.configSchema.properties;
+                if (!properties || Object.keys(properties).length === 0) {
+                  return <OptionsStub name={benchmark.name} />;
+                }
+                benchmark.configSchema.title =
+                  benchmark.name + ' configuration';
                 return (
                   <Form
                     key={'up-profiler-benchmark-' + benchmark.id}
@@ -906,11 +990,15 @@ export class BenchmarkLauncher extends React.Component<
               {scenarios}
             </div>
             <div className="up-BenchmarkLauncher-forms">
-              {[...this.state.scenarios].map(scenario => {
+              {this.state.scenarios.map(scenario => {
+                const properties = scenario.configSchema.properties;
+                if (!properties || Object.keys(properties).length === 0) {
+                  return <OptionsStub name={scenario.name} />;
+                }
+                scenario.configSchema.title = scenario.name + ' configuration';
                 return (
                   <Form
                     key={'up-profiler-scenario-' + scenario.id}
-                    // TODO: hide title or update title. Show placeholder if empty
                     schema={scenario.configSchema}
                     idPrefix={'up-profiler-scenario-' + scenario.id}
                     onChange={form => {
@@ -926,34 +1014,23 @@ export class BenchmarkLauncher extends React.Component<
               })}
             </div>
           </div>
-          <div className="up-BenchmarkLauncher-card">
-            <h4 className="up-card-heading">Run</h4>
+        </div>
+        <div className="up-BenchmarkLauncher-launchbar">
+          <BenchmarkMonitor {...this.props} />
+          <div className="up-BenchmarkLauncher-launchbar-buttons">
             <button
-              onClick={async () => {
-                for (const benchmark of this.state.benchmarks) {
-                  for (const scenario of this.state.scenarios) {
-                    const result = await this.runBenchmark(scenario, benchmark);
-                    const filename = benchmarkFilename(result);
-                    this.props.upload(
-                      new File(JSON.stringify(result).split('\n'), filename, {
-                        type: 'application/json'
-                      })
-                    );
-                    this.props.onResult(result);
-                  }
-                }
-              }}
-              className={'jp-mod-styled jp-mod-accept'}
+              onClick={this.runSelected}
+              className="jp-mod-styled jp-mod-accept"
               disabled={
-                this.state.scenarios.size === 0 ||
-                this.state.benchmarks.size === 0
+                this.state.scenarios.length === 0 ||
+                this.state.benchmarks.length === 0 ||
+                this.state.isRunning
               }
             >
               Start
             </button>
           </div>
         </div>
-        <BenchmarkMonitor {...this.props} />
       </div>
     );
   }
