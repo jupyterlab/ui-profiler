@@ -201,7 +201,6 @@ export class CompleterScenario implements IScenario {
     }
     await insertText(this.jupyterApp, text);
     await layoutReady();
-    await page.waitForSelector('.jp-Completer', { state: 'attached' });
   }
 
   async cleanupSuite(): Promise<void> {
@@ -223,14 +222,21 @@ export class CompleterScenario implements IScenario {
     await layoutReady();
     await page.press('Tab');
     await layoutReady();
-    await page.waitForSelector('.jp-Completer', { state: 'visible' });
+    // Note: in JupyterLab 3.x all completers were retained in the attached state
+    // (which may have had a performance benefit to some point, but later was just
+    // cluttering the DOM) which makes finding the correct completer harder; we
+    // need to query for a completer with programatically set styles (which are
+    // things like position (top/left/width/height) which are only present in the
+    // active completer
+    await page.waitForSelector('.jp-Completer[style]', { state: 'attached' });
+    await page.waitForSelector('.jp-Completer[style]', { state: 'visible' });
     await layoutReady();
   }
 
   async cleanup(): Promise<void> {
     await page.press('Escape');
     await layoutReady();
-    await page.waitForSelector('.jp-Completer', { state: 'hidden' });
+    await page.waitForSelector('.jp-Completer[style]', { state: 'hidden' });
     await layoutReady();
   }
   id = 'completer';
