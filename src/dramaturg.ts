@@ -5,10 +5,11 @@ import { getKeyboardLayout } from '@lumino/keyboard';
 
 function waitElementVisible(
   selector: string,
+  within?: Element,
   visible = true
 ): Promise<Element> {
   return new Promise((resolve, reject) => {
-    const node = document.querySelector(selector);
+    const node = (within || document).querySelector(selector);
 
     if (!node) {
       return reject(`No element matching ${selector} is attached`);
@@ -40,8 +41,8 @@ function waitElementVisible(
   });
 }
 
-async function waitElementHidden(selector: string) {
-  await waitElementVisible(selector, false);
+async function waitElementHidden(selector: string, within?: Element) {
+  await waitElementVisible(selector, within, false);
   return null;
 }
 
@@ -66,10 +67,10 @@ function waitForElement(selector: string, within?: Element): Promise<Element> {
       }
     });
 
-    observer.observe(within || document.body, {
+    observer.observe(within || document.documentElement, {
       childList: true,
       subtree: true,
-      attributes: selector.includes('[')
+      attributes: selector.includes('[') || selector.includes(':')
     });
 
     const node = document.querySelector(selector);
@@ -97,9 +98,10 @@ function waitNoElement(selector: string, within?: Element): Promise<null> {
       }
     });
 
-    observer.observe(within || document.body, {
+    observer.observe(within || document.documentElement, {
       childList: true,
-      subtree: true
+      subtree: true,
+      attributes: selector.includes('[') || selector.includes(':')
     });
   });
 }
@@ -173,12 +175,12 @@ function waitForSelector(
       promise = waitNoElement(selector, options.within);
       break;
     case 'visible':
-      promise = waitElementVisible(selector).then(
+      promise = waitElementVisible(selector, options.within).then(
         element => new ElementHandle(element)
       );
       break;
     case 'hidden':
-      promise = waitElementHidden(selector);
+      promise = waitElementHidden(selector, options.within);
       break;
   }
   const timeout = options.timeout || 5 * 1000;
