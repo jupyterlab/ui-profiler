@@ -58,6 +58,26 @@ export interface IRuleBlockResult extends ITimeMeasurement {
   randomization: number;
 }
 
+class RuleSetMap<T = HTMLElement, S = string> extends Map<T, Set<S>> {
+  add(element: T, rule: S): void {
+    let ruleSet = this.get(element);
+    if (!ruleSet) {
+      ruleSet = new Set<S>();
+      this.set(element, ruleSet);
+    }
+    ruleSet.add(rule);
+  }
+  countRulesUsage(): Map<S, number> {
+    const usage = new Map();
+    for (const ruleSet of this.values()) {
+      for (const selector of ruleSet.values()) {
+        usage.set(selector, (usage.get(selector) || 0) + 1);
+      }
+    }
+    return usage;
+  }
+}
+
 export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
   {
     id: 'rule-usage',
@@ -76,8 +96,6 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       const excludePattern = options.excludeMatchPattern
         ? new RegExp(options.excludeMatchPattern, 'g')
         : undefined;
-
-      const styles = [...document.querySelectorAll('style')];
 
       if (scenario.setupSuite) {
         await scenario.setupSuite();
@@ -106,14 +124,15 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       await layoutReady();
       collect(collectingObserver.takeRecords(), collectingObserver);
       collectingObserver.disconnect();
-
-      console.log('Relevant nodes:', relevantNodes);
       const relevantElements = [...relevantNodes].filter(
         node => node instanceof Element
       ) as Element[];
       const filteredElements = relevantElements.filter(
         element => element.tagName.toLocaleLowerCase() !== 'body'
       );
+      console.log('Relevant nodes:', relevantNodes);
+
+      // Find relevant class names and ids for rule style discovery.
       const relevantClassNames = new Set([
         ...filteredElements
           .map(element => [...element.classList.values()])
@@ -126,7 +145,9 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       console.log('Relevant class names:', relevantClassNames);
       console.log('Relevant IDs:', relevantIds);
 
+      // Find relevant style rules.
       const results: IRuleResult[] = [];
+      const styles = [...document.querySelectorAll('style')];
       const allRules = await collectRules(styles, { skipPattern });
       const relevantRules = new Set<IRuleData>();
       for (const rule of allRules) {
@@ -143,41 +164,51 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
           }
         }
       }
-
       const rules = [...relevantRules];
       progress?.emit({ percentage: (100 * 0.5) / rules.length });
 
-      const matches = new Map<string, number>();
-
+      // Prepare observer recording elements matching relevant rules.
+      const touches = new Map<string, number>();
+      const seenMatchingRule = new RuleSetMap<Element, string>();
+      const touchedMatchingRule = new RuleSetMap<Element, string>();
       const recordMatches: MutationCallback = mutations => {
         const touchedNodes = new Set<Node>();
         for (const node of iterateAffectedNodes(mutations)) {
           touchedNodes.add(node);
         }
         for (const node of touchedNodes) {
-          if (!(node instanceof HTMLElement)) {
+          if (!(node instanceof Element)) {
             continue;
           }
           for (const rule of relevantRules) {
             if (node.matches(rule.selector)) {
-              matches.set(rule.selector, (matches.get(rule.selector) || 0) + 1);
+              touches.set(rule.selector, (touches.get(rule.selector) || 0) + 1);
+              touchedMatchingRule.add(node, rule.selector);
             }
           }
         }
+        for (const rule of relevantRules) {
+          for (const element of document.querySelectorAll(rule.selector)) {
+            seenMatchingRule.add(element, rule.selector);
+          }
+        }
       };
-      const recordingObserver = new MutationObserver(recordMatches);
 
-      // Count number of nodes matching the relevant rules.
+      // Start counting the nodes matching the relevant rules.
+      const recordingObserver = new MutationObserver(recordMatches);
       recordingObserver.observe(document.body, observeEverythingConfig);
       await benchmark(scenario, n, true);
       await layoutReady();
       recordMatches(recordingObserver.takeRecords(), recordingObserver);
       recordingObserver.disconnect();
+      const uniqueTouches = touchedMatchingRule.countRulesUsage();
+      const uniqueApparences = seenMatchingRule.countRulesUsage();
 
+      // Estimate impact of relevant rules on the scenario performance.
       for (let i = 0; i < rules.length; i++) {
         progress?.emit({ percentage: (100 * (i + 0.5)) / rules.length });
         const rule = rules[i];
-        // benchmark without the rule
+        // Benchmark without the rule.
         rule.sheet.deleteRule(rule.ruleIndex);
         await layoutReady();
         const measurements = await benchmark(scenario, n, true);
@@ -187,16 +218,22 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
           source: rule.source,
           ruleIndex: rule.ruleIndex,
           stylesheetIndex: rule.stylesheetIndex,
-          matches: matches.get(rule.selector) || 0
+          touchCount: touches.get(rule.selector) || 0,
+          elementsTouched: uniqueTouches.get(rule.selector) || 0,
+          elementsSeen: uniqueApparences.get(rule.selector) || 0
         });
-        // restore the rule
+        // Restore the rule.
         rule.sheet.insertRule(rule.rule.cssText, rule.ruleIndex);
         await layoutReady();
       }
+
+      // Clean up.
       if (scenario.cleanupSuite) {
         await scenario.cleanupSuite();
       }
+
       progress?.emit({ percentage: 100 });
+
       return {
         results: results,
         reference: reference.times,
@@ -205,7 +242,9 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
         type: 'time'
       };
     },
-    sortColumn: 'matches'
+    sortColumn: 'elementsSeen',
+    interpretation:
+      'elementsSeen: how many elements were seen on the entire page when executing the scenario. elementsTouched: how many elements were modified or in the subtree of a modified element when executing the scenario. touchCount: upper bound on how many times the rule matched an element (will be high for rules matching many elements, and for rules matching a single element that is repeatedly modified in the chosen scenario). Low number of elementsSeen suggest potentially unused rule. Negative Δ highlights rules which may be deteriorating scenario performance.'
   };
 
 export const styleSheetsBenchmark: IBenchmark<
@@ -221,10 +260,10 @@ export const styleSheetsBenchmark: IBenchmark<
   ): Promise<ITimingOutcome<IStylesheetResult>> => {
     const n = options.repeats || 3;
     const start = Date.now();
-    const styles = [...document.querySelectorAll('style')];
     if (scenario.setupSuite) {
       await scenario.setupSuite();
     }
+    const styles = [...document.querySelectorAll('style')];
     const reference = await benchmark(scenario, n, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IStylesheetResult[] = [];
@@ -284,10 +323,10 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
       ? new RegExp(options.skipPattern, 'g')
       : undefined;
     const start = Date.now();
-    const styles = [...document.querySelectorAll('style')];
     if (scenario.setupSuite) {
       await scenario.setupSuite();
     }
+    const styles = [...document.querySelectorAll('style')];
     const reference = await benchmark(scenario, n, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleResult[] = [];
@@ -342,10 +381,10 @@ export const styleRuleGroupBenchmark: IBenchmark<
     const maxBlocks = options.maxBlocks || 5;
     const minBlocks = options.minBlocks || 2;
     const start = Date.now();
-    let styles = [...document.querySelectorAll('style')];
     if (scenario.setupSuite) {
       await scenario.setupSuite();
     }
+    let styles = [...document.querySelectorAll('style')];
     const reference = await benchmark(scenario, n, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleBlockResult[] = [];
