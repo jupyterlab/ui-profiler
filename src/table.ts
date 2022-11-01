@@ -4,7 +4,8 @@ import {
   JSONModel,
   BasicKeyHandler,
   BasicMouseHandler,
-  BasicSelectionModel
+  BasicSelectionModel,
+  SelectionModel
 } from '@lumino/datagrid';
 import { ITimeMeasurement } from './benchmark';
 import { IRuleDescription } from './css';
@@ -35,6 +36,12 @@ class MouseHandler extends BasicMouseHandler {
     }
 
     super.onMouseUp(grid, event);
+  }
+
+  onMouseMove(grid: DataGrid, event: MouseEvent): void {
+    // cancel click to allow smooth resize
+    this._lastMouseDownHit = null;
+    super.onMouseMove(grid, event);
   }
 
   private _clicked = new Signal<this, DataGrid.HitTestResult>(this);
@@ -82,7 +89,7 @@ interface ITimingTableOptions {
 
 export class TimingTable extends ResultTable {
   readonly columnWidths = {
-    source: 425,
+    source: 325,
     content: 100,
     selector: 175,
     rulesInBlock: 450,
@@ -123,7 +130,9 @@ export class TimingTable extends ResultTable {
         );
       }
       if (result.source) {
-        result['source'] = result['source'].replace('webpack://./', '');
+        result['source'] = result['source']
+          .replace('webpack://./', '')
+          .replace('node_modules', '📦');
       }
       if (result['totalTime']) {
         result['totalTime'] = Statistic.round(result.totalTime, 1);
@@ -149,15 +158,52 @@ export class TimingTable extends ResultTable {
     this.sortColumn = options.sortColumn || 'IQM';
     this.sortOrder = options.lowerIsBetter ? 'ascending' : 'descending';
     this._setupDataModel();
+    this.setupColumnWidths();
   }
 
-  private _setupDataModel() {
-    const sort =
-      this.sortOrder === 'ascending'
-        ? ((a: ITimeMeasurement, b: ITimeMeasurement) =>
-            b[this.sortColumn] - a[this.sortColumn]).bind(this)
-        : ((a: ITimeMeasurement, b: ITimeMeasurement) =>
-            a[this.sortColumn] - b[this.sortColumn]).bind(this);
+  private _createSortFunction() {
+    const first = this.results[0];
+    if (typeof first[this.sortColumn] === 'number') {
+      if (this.sortOrder === 'ascending') {
+        return ((a: ITimeMeasurement, b: ITimeMeasurement) =>
+          b[this.sortColumn] - a[this.sortColumn]).bind(this);
+      } else {
+        return ((a: ITimeMeasurement, b: ITimeMeasurement) =>
+          a[this.sortColumn] - b[this.sortColumn]).bind(this);
+      }
+    } else {
+      if (this.sortOrder === 'ascending') {
+        return ((a: ITimeMeasurement, b: ITimeMeasurement) =>
+          (b[this.sortColumn] || '')
+            .toString()
+            .localeCompare((a[this.sortColumn] || '').toString())).bind(this);
+      } else {
+        return ((a: ITimeMeasurement, b: ITimeMeasurement) =>
+          (a[this.sortColumn] || '')
+            .toString()
+            .localeCompare((b[this.sortColumn] || '').toString())).bind(this);
+      }
+    }
+  }
+
+  private _setupDataModel(keepColumnSize = false): void {
+    let sizes: number[] = [];
+    let selectionArgs: SelectionModel.SelectArgs | null = null;
+    if (this.selectionModel) {
+      const selection = this.selectionModel.currentSelection();
+      if (selection) {
+        selectionArgs = {
+          cursorColumn: this.selectionModel.cursorColumn,
+          cursorRow: this.selectionModel.cursorRow,
+          clear: 'all',
+          ...selection
+        };
+      }
+    }
+    if (keepColumnSize) {
+      sizes = this.columnNames.map((name, i) => this.columnSize('body', i));
+    }
+    const sort = this._createSortFunction();
     this.dataModel = new JSONModel({
       data: this.results.sort(sort),
       schema: {
@@ -172,7 +218,14 @@ export class TimingTable extends ResultTable {
     this.selectionModel = new BasicSelectionModel({
       dataModel: this.dataModel
     });
-    this.setupColumnWidths();
+    if (keepColumnSize) {
+      sizes.map((size, index) => {
+        this.resizeColumn('body', index, size);
+      });
+    }
+    if (selectionArgs) {
+      this.selectionModel.select(selectionArgs);
+    }
   }
 
   handleClick(hit: DataGrid.HitTestResult): void {
@@ -188,7 +241,7 @@ export class TimingTable extends ResultTable {
       } else {
         this.sortColumn = newSortColumn;
       }
-      this._setupDataModel();
+      this._setupDataModel(true);
       this.update();
     }
   }
