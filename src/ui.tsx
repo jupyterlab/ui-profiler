@@ -64,6 +64,10 @@ namespace ProfileTrace {
       x: number;
       y: number;
     };
+    dimensions: {
+      width: number;
+      height: number;
+    } | null;
     inDrag: boolean;
   }
 }
@@ -77,17 +81,51 @@ export class ProfileTrace extends React.Component<
     this.state = {
       scale: { x: 1, y: 1 },
       position: { x: 0, y: 0 },
+      dimensions: null,
       inDrag: false
     };
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
+    this.container = React.createRef();
+    this.resizeObserver = new ResizeObserver(this.updateSizeInfo.bind(this));
   }
 
+  resizeObserver: ResizeObserver;
+  container: React.RefObject<HTMLDivElement>;
   deepest = 0;
-  totalWidth = 100;
-  totalHeight = 100;
+  contentWidth = 100;
+  contentHeight = 100;
+  initialWidth = 100;
+
+  componentDidMount(): void {
+    const trace = this.props.trace;
+    const first = trace.samples[0].timestamp;
+    const initialWidth = Math.max(
+      ...trace.samples.map(sample => sample.timestamp - first)
+    );
+    const dimensions = {
+      width: this.container.current!.offsetWidth,
+      height: this.container.current!.offsetHeight
+    };
+    this.setState({
+      scale: { x: dimensions!.width / initialWidth, y: 1 },
+      dimensions
+    });
+    this.resizeObserver.observe(this.container.current!);
+  }
+  componentWillUnmount(): void {
+    this.resizeObserver.disconnect();
+  }
+  updateSizeInfo(): void {
+    this.setState({
+      dimensions: {
+        width: this.container.current!.offsetWidth,
+        height: this.container.current!.offsetHeight
+      }
+    });
+  }
 
   handleWheel(e: React.WheelEvent) {
     const scale = this.state.scale;
@@ -105,17 +143,17 @@ export class ProfileTrace extends React.Component<
   handleMouseMove(e: MouseEvent) {
     if (this.state.inDrag) {
       const position = this.state.position;
+      const cushion = 50;
       this.setState({
-        // TODO: the constraints should use actual width/height from bounding rect since user can arbitrarily resize the contener
         position: {
           x: Math.max(
-            Math.min(position.x + e.movementX, 0.99 * this.totalWidth),
-            -0.99 * this.totalWidth
+            Math.min(
+              position.x + e.movementX,
+              this.state.dimensions!.width - cushion
+            ),
+            -this.contentWidth + cushion
           ),
-          y: Math.max(
-            Math.min(position.y + e.movementY, 0.5 * this.totalHeight),
-            -0.5 * this.totalHeight
-          )
+          y: 0
         }
       });
     }
@@ -133,7 +171,7 @@ export class ProfileTrace extends React.Component<
     document.addEventListener('mouseup', this.handleMouseUp);
   }
 
-  render(): JSX.Element {
+  renderContent(): JSX.Element {
     const { trace, itemHeight } = this.props;
     if (!trace.samples) {
       return <div>No samples in trace</div>;
@@ -143,17 +181,34 @@ export class ProfileTrace extends React.Component<
     const frameLocations = [...iterateFrames(trace)];
     this.deepest = Math.max(...frameLocations.map(frame => frame.stackDepth));
 
-    let totalWidth = 0;
+    const scale = this.state.scale;
+
+    const samples = trace.samples.map((sample, i) => {
+      const nextSample = trace.samples[i + 1];
+      const style = {
+        width: (nextSample?.timestamp - sample.timestamp) * scale.x,
+        left: (sample.timestamp - first) * scale.x
+      };
+      return (
+        <div
+          className="up-ProfileTrace-sample"
+          key={'sample-' + i}
+          style={style}
+        ></div>
+      );
+    });
+
+    let contentWidth = 0;
     const frames = frameLocations.map((location, i) => {
       const frame = trace.frames[location.frameId];
-      const left = (location.start - first) * this.state.scale.x;
-      const width = location.duration * this.state.scale.x;
-      totalWidth = Math.max(totalWidth, left + width);
+      const left = (location.start - first) * scale.x;
+      const width = location.duration * scale.x;
+      contentWidth = Math.max(contentWidth, left + width);
       const style = {
-        width: width + 'px',
-        top: (location.stackDepth - 1) * itemHeight * this.state.scale.y + 'px',
+        width: width,
+        top: (location.stackDepth - 1) * itemHeight * scale.y,
         left: left,
-        height: itemHeight + 'px'
+        height: itemHeight
       };
       return (
         <div
@@ -171,28 +226,35 @@ export class ProfileTrace extends React.Component<
         </div>
       );
     });
-    this.totalWidth = totalWidth;
-    this.totalHeight =
-      (2 + this.deepest) * this.props.itemHeight * this.state.scale.y;
+
+    this.contentWidth = contentWidth;
+    this.contentHeight = (2 + this.deepest) * this.props.itemHeight * scale.y;
 
     // TODO: also show samples as dotted horizontal line with absolute positioning for reference
     return (
       <div
+        className="up-ProfileTrace-content"
+        style={{
+          transform: `translate(${this.state.position.x}px, ${this.state.position.y}px)`,
+          width: contentWidth + 'px',
+          height: this.contentHeight + 'px'
+        }}
+      >
+        {frames}
+        {samples}
+      </div>
+    );
+  }
+
+  render(): JSX.Element {
+    return (
+      <div
         className="up-ProfileTrace"
         onWheel={this.handleWheel}
-        style={{ height: this.totalHeight + 'px' }}
         onMouseDown={this.handleMouseDown}
+        ref={this.container}
       >
-        <div
-          className="up-ProfileTrace-content"
-          style={{
-            transform: `translate(${this.state.position.x}px, ${this.state.position.y}px)`,
-            width: totalWidth + 'px',
-            height: this.totalHeight + 'px'
-          }}
-        >
-          {frames}
-        </div>
+        {this.state.dimensions ? this.renderContent() : 'Loading'}
       </div>
     );
   }
@@ -794,8 +856,6 @@ export class BenchmarkLauncher extends React.Component<
     benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>,
     config: IConfigValue
   ): Promise<IBenchmarkResultBase<T>> {
-    // TODO: can we add a simple "lights out" overlay to reduce user interference while the benchmark is running (but do keep showing them progress) without interfering with measurements?
-
     const options = JSONExt.deepCopy({
       scenario: config.scenarios[scenario.id],
       benchmark: config.benchmarks[benchmark.id]
@@ -826,7 +886,6 @@ export class BenchmarkLauncher extends React.Component<
       ...data,
       id: benchmarkId(data)
     };
-    // TODO: open templated notebook for analysis of results
   }
 
   onBenchmarkChanged(event: React.ChangeEvent<HTMLInputElement>): void {
