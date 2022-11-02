@@ -11,7 +11,7 @@ export type NumberOfRepeats = number;
  */
 export type ProfilingScale = 'micro' | 'macro';
 /**
- * Sampling interval (in milliseconds). Browsers are not required to take samples at this rate and may increase it (for example for privacy protection).
+ * Sampling interval (in milliseconds). Browsers are not required to take samples at this rate and may increase it (Chrome uses 16ms on Windows and 10ms elsewhere).
  */
 export type SampleInterval = number;
 /**

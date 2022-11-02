@@ -10,11 +10,13 @@ import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
 import type { ScenarioOptions } from './types/_scenario-base';
 import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
 import type { CompleterScenarioOptions } from './types/_scenario-completer';
+import type { SidebarsScenarioOptions } from './types/_scenario-sidebars';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
 import scenarioMenuOpenOptionsSchema from './schema/scenario-menu-open.json';
 import scenarioTabOptionsSchema from './schema/scenario-tabs.json';
 import scenarioCompleterOptionsSchema from './schema/scenario-completer.json';
+import scenarioSidebarsSchema from './schema/scenario-sidebars.json';
 
 async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
   for (const menu of ['edit', 'view', 'run', 'kernel', 'settings', 'help']) {
@@ -76,7 +78,7 @@ export class MenuOpenScenario implements IScenario {
   private _menu: string;
 }
 
-async function closeSidePanels(jupyterApp: JupyterFrontEnd): Promise<void> {
+async function closeSidebars(jupyterApp: JupyterFrontEnd): Promise<void> {
   for (const side of ['left', 'right']) {
     const panel = document.querySelector(`#jp-${side}-stack`);
     if (panel && !panel.classList.contains('lm-mod-hidden')) {
@@ -87,38 +89,34 @@ async function closeSidePanels(jupyterApp: JupyterFrontEnd): Promise<void> {
   }
 }
 
-export class SidePanelOpenScenario implements IScenario {
+export class SidebarOpenScenario implements IScenario {
   constructor(protected jupyterApp: JupyterFrontEnd) {
     // no-op
   }
 
-  setOptions(options: ScenarioOptions): void {
-    // no-op
+  setOptions(options: SidebarsScenarioOptions): void {
+    this._sidebars = options.sidebars;
   }
 
   async setup(): Promise<void> {
-    return closeSidePanels(this.jupyterApp);
+    return closeSidebars(this.jupyterApp);
   }
   async run(): Promise<void> {
     // TODO make this configurable (with this list as default)
-    for (const panel of [
-      'table-of-contents',
-      'jp-debugger-sidebar',
-      'jp-property-inspector',
-      'filebrowser',
-      'extensionmanager.main-view',
-      'jp-running-sessions'
-    ]) {
+    for (const sidebar of this._sidebars) {
       // will be possible with commands in 4.0+ https://stackoverflow.com/a/74005349/6646912
-      this.jupyterApp.shell.activateById(panel);
-      await page.waitForSelector(`#${CSS.escape(panel)}`, { state: 'visible' });
+      this.jupyterApp.shell.activateById(sidebar);
+      await page.waitForSelector(`#${CSS.escape(sidebar)}`, {
+        state: 'visible'
+      });
       await layoutReady();
     }
   }
   // TOOD restore initially open panel in cleanup?
-  id = 'sidePanelOpen';
-  name = 'Open Side Panel';
-  configSchema = scenarioOptionsSchema as JSONSchema7;
+  id = 'sidebarOpen';
+  name = 'Open Sidebar';
+  configSchema = scenarioSidebarsSchema as any as JSONSchema7;
+  private _sidebars: string[] = ['filebrowser'];
 }
 
 export function insertText(

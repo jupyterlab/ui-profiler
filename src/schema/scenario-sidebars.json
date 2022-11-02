@@ -1,0 +1,22 @@
+{
+  "title": "Sidebars Scenario Options",
+  "type": "object",
+  "properties": {
+    "sidebars": {
+      "title": "The sidebars to open",
+      "type": "array",
+      "default": [
+        "table-of-contents",
+        "jp-debugger-sidebar",
+        "jp-property-inspector",
+        "filebrowser",
+        "extensionmanager.main-view",
+        "jp-running-sessions"
+      ],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["sidebars"]
+}

@@ -23,7 +23,7 @@ import {
   MenuSwitchScenario,
   SwitchTabScenario,
   SwitchTabFocusScenario,
-  SidePanelOpenScenario,
+  SidebarOpenScenario,
   CompleterScenario
 } from './scenarios';
 import { IBenchmark, ITimingOutcome, IProfilingOutcome } from './benchmark';
@@ -61,7 +61,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         new MenuSwitchScenario(app),
         new SwitchTabScenario(app),
         new SwitchTabFocusScenario(app),
-        new SidePanelOpenScenario(app),
+        new SidebarOpenScenario(app),
         new CompleterScenario(app)
       ],
       translator: nullTranslator,
