@@ -250,8 +250,13 @@ async function type(
 }
 
 async function click(element: HTMLElement) {
-  element.dispatchEvent(new MouseEvent('mousedown'));
-  element.dispatchEvent(new MouseEvent('mouseup'));
+  const rect = element.getBoundingClientRect();
+  const initDict = {
+    clientX: rect.x + rect.width / 2,
+    clientY: rect.x + rect.height / 2
+  };
+  element.dispatchEvent(new MouseEvent('mousedown', initDict));
+  element.dispatchEvent(new MouseEvent('mouseup', initDict));
   element.click();
 }
 
