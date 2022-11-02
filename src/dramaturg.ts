@@ -293,5 +293,15 @@ export const page = {
   focus: async (selector: string): Promise<void> => {
     const element = await waitForSelector(selector, { state: 'visible' });
     (element.element as HTMLElement).focus();
+  },
+  mouse: {
+    wheel: async (deltaX: number, deltaY: number): Promise<void> => {
+      document.dispatchEvent(
+        new WheelEvent('wheel', {
+          deltaX,
+          deltaY
+        })
+      );
+    }
   }
 };

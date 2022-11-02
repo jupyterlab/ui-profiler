@@ -24,7 +24,8 @@ import {
   SwitchTabScenario,
   SwitchTabFocusScenario,
   SidebarOpenScenario,
-  CompleterScenario
+  CompleterScenario,
+  ScrollScenario
 } from './scenarios';
 import { IBenchmark, ITimingOutcome, IProfilingOutcome } from './benchmark';
 import { IJupyterState } from './utils';
@@ -62,7 +63,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         new SwitchTabScenario(app),
         new SwitchTabFocusScenario(app),
         new SidebarOpenScenario(app),
-        new CompleterScenario(app)
+        new CompleterScenario(app),
+        new ScrollScenario(app)
       ],
       translator: nullTranslator,
       upload: (file: File) => {

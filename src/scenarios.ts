@@ -11,12 +11,14 @@ import type { ScenarioOptions } from './types/_scenario-base';
 import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
 import type { CompleterScenarioOptions } from './types/_scenario-completer';
 import type { SidebarsScenarioOptions } from './types/_scenario-sidebars';
+import type { ScrollScenarioOptions } from './types/_scenario-scroll';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
 import scenarioMenuOpenOptionsSchema from './schema/scenario-menu-open.json';
 import scenarioTabOptionsSchema from './schema/scenario-tabs.json';
 import scenarioCompleterOptionsSchema from './schema/scenario-completer.json';
 import scenarioSidebarsSchema from './schema/scenario-sidebars.json';
+import scenarioScrollSchema from './schema/scenario-scroll.json';
 
 async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
   for (const menu of ['edit', 'view', 'run', 'kernel', 'settings', 'help']) {
@@ -135,24 +137,26 @@ export function insertText(
   });
 }
 
-export class CompleterScenario implements IScenario {
+class SingleEditorScenario<
+  T extends CompleterScenarioOptions | ScrollScenarioOptions
+> {
   constructor(protected jupyterApp: JupyterFrontEnd) {
     // no-op
   }
 
-  setOptions(options: CompleterScenarioOptions): void {
-    this._options = options;
-    this._useNotebook = this._options.editor === 'Notebook';
+  setOptions(options: T): void {
+    this.options = options;
+    this.useNotebook = this.options.editor === 'Notebook';
   }
 
   async setupSuite(): Promise<void> {
-    if (!this._options) {
-      throw new Error('Options not set for completer scenario.');
+    if (!this.options) {
+      throw new Error('Options not set for scenario.');
     }
-    if (!this._options.path || this._options.path.length === 0) {
+    if (!this.options.path || this.options.path.length === 0) {
       const model = await this.jupyterApp.commands.execute(
         'docmanager:new-untitled',
-        this._useNotebook
+        this.useNotebook
           ? { path: '', type: 'notebook' }
           : {
               path: '',
@@ -160,38 +164,72 @@ export class CompleterScenario implements IScenario {
               ext: 'py'
             }
       );
-      this._path = model.path;
+      this.path = model.path;
     } else {
-      this._path = this._options.path;
+      this.path = this.options.path;
     }
     const widget: MainAreaWidget = await this.jupyterApp.commands.execute(
       'docmanager:open',
       {
-        path: this._path,
-        factory: this._useNotebook ? 'Notebook' : 'Editor'
+        path: this.path,
+        factory: this.useNotebook ? 'Notebook' : 'Editor'
       }
     );
-    this._widget = widget;
-    this.jupyterApp.shell.add(this._widget, 'main', { mode: 'split-right' });
+    this.widget = widget;
+    this.jupyterApp.shell.add(this.widget, 'main', { mode: 'split-right' });
     await activateTabWidget(this.jupyterApp, widget);
     await layoutReady();
-    if (this._useNotebook) {
+    if (this.useNotebook) {
       // Accept default kernel in kernel selection dialog
       await page.click('.jp-Dialog-button.jp-mod-accept');
     }
-    const handle = new ElementHandle(widget.node);
+    const handle = new ElementHandle(this.widget.node);
     await handle.waitForSelector('.jp-Editor', { state: 'attached' });
     await layoutReady();
     await handle.waitForSelector('.jp-Editor', { state: 'visible' });
     await layoutReady();
+    this.editor = this.useNotebook
+      ? this.widget!.node.querySelector('.jp-Notebook')!
+      : this.widget!.node.querySelector('.jp-FileEditorCodeWrapper')!;
+  }
+
+  async cleanupSuite(): Promise<void> {
+    if (this.widget) {
+      // TODO: reset cell/editor contents if anything was added?
+      await this.jupyterApp.commands.execute('docmanager:save');
+      this.widget.close();
+    }
+    // TODO: remove file; also the file should be in a temp dir
+  }
+
+  protected editor: HTMLElement | null = null;
+  protected path: string | null = null;
+  protected options: T | null = null;
+  protected useNotebook = true;
+  protected widget: MainAreaWidget | null = null;
+}
+
+export class CompleterScenario
+  extends SingleEditorScenario<CompleterScenarioOptions>
+  implements IScenario
+{
+  id = 'completer';
+  name = 'Completer';
+  configSchema = scenarioCompleterOptionsSchema as any as JSONSchema7;
+
+  async setupSuite() {
+    await super.setupSuite();
+    if (!this.widget || !this.options) {
+      throw new Error('Parent setup failure');
+    }
     let text: string;
-    if (typeof this._options.setup?.setupText !== 'undefined') {
-      text = this._options.setup.setupText;
+    if (typeof this.options.setup?.setupText !== 'undefined') {
+      text = this.options.setup.setupText;
     } else {
       const tokens = [];
-      for (let i = 0; i < this._options.setup.tokenCount; i++) {
+      for (let i = 0; i < this.options.setup.tokenCount; i++) {
         tokens.push(
-          ('t' + i).padEnd(this._options.setup.tokenSize, 'x') + ' = ' + i
+          ('t' + i).padEnd(this.options.setup.tokenSize, 'x') + ' = ' + i
         );
       }
       tokens.push('t');
@@ -207,19 +245,10 @@ export class CompleterScenario implements IScenario {
     await this.cleanup();
   }
 
-  async cleanupSuite(): Promise<void> {
-    if (this._widget) {
-      // TODO: reset cell/editor contents if anything was added?
-      await this.jupyterApp.commands.execute('docmanager:save');
-      this._widget.close();
-    }
-    // TODO: remove file; also the file should be in a temp dir
-  }
-
   async run(): Promise<void> {
-    if (this._useNotebook) {
+    if (this.useNotebook) {
       // TODO enter a specific cell, not the first cell?
-      const handle = new ElementHandle(this._widget!.node);
+      const handle = new ElementHandle(this.widget!.node);
       const editor = await handle.$('.jp-Editor textarea');
       await editor!.focus();
     }
@@ -243,13 +272,6 @@ export class CompleterScenario implements IScenario {
     await page.waitForSelector('.jp-Completer[style]', { state: 'hidden' });
     await layoutReady();
   }
-  id = 'completer';
-  name = 'Completer';
-  configSchema = scenarioCompleterOptionsSchema as any as JSONSchema7;
-  _widget: MainAreaWidget | null = null;
-  _options: CompleterScenarioOptions | null = null;
-  _path: string | null = null;
-  _useNotebook = false;
 }
 
 async function activateTabWidget(
@@ -264,6 +286,99 @@ async function activateTabWidget(
     state: 'attached'
   });
   await layoutReady();
+}
+
+async function waitForScrollEnd(
+  element: HTMLElement,
+  requiredRestTime: number
+) {
+  return new Promise<void>(resolve => {
+    let lastScrollTop = element.scrollTop;
+    let lastScrollLeft = element.scrollLeft;
+    const intervalHandle = setInterval(() => {
+      if (
+        element.scrollTop === lastScrollTop &&
+        element.scrollLeft === lastScrollLeft
+      ) {
+        clearInterval(intervalHandle);
+        return resolve();
+      }
+      lastScrollTop = element.scrollTop;
+      lastScrollLeft = element.scrollLeft;
+    }, requiredRestTime);
+  });
+}
+
+export class ScrollScenario
+  extends SingleEditorScenario<ScrollScenarioOptions>
+  implements IScenario
+{
+  id = 'scroll';
+  name = 'Scroll';
+  configSchema = scenarioScrollSchema as any as JSONSchema7;
+
+  async setupSuite(): Promise<void> {
+    await super.setupSuite();
+    if (!this.widget || !this.options) {
+      throw new Error('Parent setup failure');
+    }
+    const showEveryN = this.options.cells < 100 ? 20 : 50;
+    for (let i = 0; i < this.options.cells; i++) {
+      if (this.useNotebook) {
+        await this.jupyterApp.commands.execute('notebook:insert-cell-below');
+      }
+      if (this.options.editorContent) {
+        await insertText(
+          this.jupyterApp,
+          this.useNotebook
+            ? this.options.editorContent
+            : this.options.editorContent + '\n'
+        );
+      }
+      // just to show that the setup is progressing
+      if (i < 5 || i % showEveryN == 0) {
+        await layoutReady();
+      }
+    }
+    this.editor!.scrollTop = 0;
+    await layoutReady();
+  }
+
+  async run(): Promise<void> {
+    if (!this.widget || !this.options) {
+      throw new Error('Scrol scenario setup failure');
+    }
+    if (this.options.cellByCell && this.useNotebook) {
+      for (let i = 0; i < this.options.cells; i++) {
+        await this.jupyterApp.commands.execute('notebook:move-cursor-down');
+        await layoutReady();
+      }
+      await layoutReady();
+    } else {
+      this.editor!.scrollBy({
+        top: this.options.scrollTop,
+        left: 0,
+        behavior: this.options.scrollBehavior
+      });
+      await waitForScrollEnd(this.editor!, 50);
+      await layoutReady();
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    if (!this.widget || !this.options) {
+      throw new Error('Scrol scenario setup failure');
+    }
+    if (this.options.cellByCell && this.useNotebook) {
+      for (let i = 0; i < this.options.cells; i++) {
+        await this.jupyterApp.commands.execute('notebook:move-cursor-up');
+      }
+      await layoutReady();
+    } else {
+      this.editor!.scrollTop = 0;
+      await layoutReady();
+    }
+  }
 }
 
 export class SwitchTabScenario implements IScenario {
