@@ -93,8 +93,8 @@
   font-size: var(--jp-ui-font-size1);
 }
 
-.up-BenchmarkLauncher fieldset input,
-.up-BenchmarkLauncher fieldset select {
+.up-BenchmarkLauncher-forms fieldset input,
+.up-BenchmarkLauncher-forms fieldset select {
   font-size: var(--jp-content-font-size1);
   border-color: var(--jp-input-border-color);
   border-style: solid;
@@ -104,6 +104,11 @@
   background: none;
   color: var(--jp-content-font-color0);
   height: inherit;
+}
+
+/* prevent duplicated description from showing up on checkboxes */
+.up-BenchmarkLauncher-forms .checkbox > .field-description {
+  display: none;
 }
 
 .up-BenchmarkLauncher-choices {
