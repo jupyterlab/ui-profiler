@@ -3,7 +3,12 @@ import type { MainAreaWidget } from '@jupyterlab/apputils';
 
 import { JSONSchema7 } from 'json-schema';
 
-import { page, layoutReady, ElementHandle } from './dramaturg';
+import {
+  page,
+  layoutReady,
+  ElementHandle,
+  waitForScrollEnd
+} from './dramaturg';
 import { IScenario } from './benchmark';
 
 import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
@@ -217,7 +222,7 @@ export class CompleterScenario
   name = 'Completer';
   configSchema = scenarioCompleterOptionsSchema as any as JSONSchema7;
 
-  async setupSuite() {
+  async setupSuite(): Promise<void> {
     await super.setupSuite();
     if (!this.widget || !this.options) {
       throw new Error('Parent setup failure');
@@ -288,27 +293,6 @@ async function activateTabWidget(
   await layoutReady();
 }
 
-async function waitForScrollEnd(
-  element: HTMLElement,
-  requiredRestTime: number
-) {
-  return new Promise<void>(resolve => {
-    let lastScrollTop = element.scrollTop;
-    let lastScrollLeft = element.scrollLeft;
-    const intervalHandle = setInterval(() => {
-      if (
-        element.scrollTop === lastScrollTop &&
-        element.scrollLeft === lastScrollLeft
-      ) {
-        clearInterval(intervalHandle);
-        return resolve();
-      }
-      lastScrollTop = element.scrollTop;
-      lastScrollLeft = element.scrollLeft;
-    }, requiredRestTime);
-  });
-}
-
 export class ScrollScenario
   extends SingleEditorScenario<ScrollScenarioOptions>
   implements IScenario
@@ -336,7 +320,7 @@ export class ScrollScenario
         );
       }
       // just to show that the setup is progressing
-      if (i < 5 || i % showEveryN == 0) {
+      if (i < 5 || i % showEveryN === 0) {
         await layoutReady();
       }
     }

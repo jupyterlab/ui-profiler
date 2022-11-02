@@ -106,6 +106,27 @@ function waitNoElement(selector: string, within?: Element): Promise<null> {
   });
 }
 
+export async function waitForScrollEnd(
+  element: HTMLElement,
+  requiredRestTime: number
+): Promise<void> {
+  return new Promise(resolve => {
+    let lastScrollTop = element.scrollTop;
+    let lastScrollLeft = element.scrollLeft;
+    const intervalHandle = setInterval(() => {
+      if (
+        element.scrollTop === lastScrollTop &&
+        element.scrollLeft === lastScrollLeft
+      ) {
+        clearInterval(intervalHandle);
+        return resolve();
+      }
+      lastScrollTop = element.scrollTop;
+      lastScrollLeft = element.scrollLeft;
+    }, requiredRestTime);
+  });
+}
+
 export function layoutReady(): Promise<void> {
   return new Promise(resolve => {
     return requestAnimationFrame(() => {

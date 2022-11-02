@@ -127,7 +127,7 @@ export class ProfileTrace extends React.Component<
     });
   }
 
-  handleWheel(e: React.WheelEvent) {
+  handleWheel(e: React.WheelEvent): void {
     const scale = this.state.scale;
     const newScale = scale.x - e.deltaY / 100;
     if (newScale > 0) {
@@ -140,7 +140,7 @@ export class ProfileTrace extends React.Component<
     }
   }
 
-  handleMouseMove(e: MouseEvent) {
+  handleMouseMove(e: MouseEvent): void {
     if (this.state.inDrag) {
       const position = this.state.position;
       const cushion = 50;
@@ -159,13 +159,13 @@ export class ProfileTrace extends React.Component<
     }
   }
 
-  handleMouseUp() {
+  handleMouseUp(): void {
     this.setState({ inDrag: false });
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
   }
 
-  handleMouseDown() {
+  handleMouseDown(): void {
     this.setState({ inDrag: true });
     document.addEventListener('mousemove', this.handleMouseMove);
     document.addEventListener('mouseup', this.handleMouseUp);
