@@ -200,7 +200,13 @@ export class CompleterScenario implements IScenario {
       text = tokens.join('\n');
     }
     await insertText(this.jupyterApp, text);
-    await layoutReady();
+    // first run is flaky
+    try {
+      await this.run();
+    } catch (e) {
+      // no-op
+    }
+    await this.cleanup();
   }
 
   async cleanupSuite(): Promise<void> {
