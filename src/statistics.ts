@@ -18,6 +18,9 @@ export namespace Statistic {
   }
 
   export function sum(numbers: number[]): number {
+    if (numbers.length === 0) {
+      return NaN;
+    }
     return numbers.reduce((a, b) => a + b);
   }
 }
