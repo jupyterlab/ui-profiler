@@ -221,7 +221,10 @@ export class ProfileTrace extends React.Component<
           }
           key={'frame-' + i}
           style={style}
-          title={Statistic.round(location.duration, 1) + 'ms'}
+          title={[
+            frame.name,
+            Statistic.round(location.duration, 1) + 'ms'
+          ].join('\n')}
         >
           {frame.name}
         </div>
@@ -634,14 +637,14 @@ function profilingSummary(profile: IProfilingOutcome): JSX.Element {
           Statistic.mean(first.traces.map(trace => trace.frames.length)),
           1
         )}
-        ,{' '}
+        .{' '}
         <span
           title={
             'Average recorderd: ' +
             Statistic.round(first.averageSampleInterval, 1)
           }
         >
-          . Sampling interval: {Statistic.round(first.samplingInterval, 1)} ms
+          Sampling interval: {Statistic.round(first.samplingInterval, 1)} ms
         </span>
       </div>
       <div>Total time: {formatTime(profile.totalTime)}</div>
