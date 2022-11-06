@@ -14,7 +14,7 @@ export type ScrollFromTop = number;
  */
 export type ScrollBehaviour = 'smooth' | 'auto';
 /**
- * Instead of scrolling, traverse notebook cell-by-cell (which also combines stepwise scrolling and cell activation/deactivation).
+ * Instead of scrolling, traverse notebook cell-by-cell (which also combines stepwise scrolling and cell activation/deactivation). Small number of cells (50-100) is recommended for benchmarking such scenario. 'scrollTop' and 'scrollBehavior' have no effect if this variant is enabled. Has no effect in file editor.
  */
 export type TraverseCellByCell = boolean;
 /**
