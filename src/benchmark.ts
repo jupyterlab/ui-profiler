@@ -60,7 +60,7 @@ export interface IBenchmark<T extends IOutcomeBase = IOutcomeBase> {
   /**
    * Brief (one-two sentences) explanation how to interpret the results.
    */
-  interpretation?: string;
+  interpretation?: string | JSX.Element;
 }
 
 interface IMeasurement {

@@ -1,4 +1,5 @@
 import { JSONSchema7 } from 'json-schema';
+import React from 'react';
 
 import {
   IScenario,
@@ -243,8 +244,12 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       };
     },
     sortColumn: 'elementsSeen',
-    interpretation:
-      'elementsSeen: how many elements were seen on the entire page when executing the scenario. elementsTouched: how many elements were modified or in the subtree of a modified element when executing the scenario. touchCount: upper bound on how many times the rule matched an element (will be high for rules matching many elements, and for rules matching a single element that is repeatedly modified in the chosen scenario). Low number of elementsSeen suggest potentially unused rule. Negative Δ highlights rules which may be deteriorating scenario performance.'
+    interpretation: <><ul>
+      <li><code>elementsSeen</code>: how many elements were seen on the entire page when executing the scenario.</li>
+      <li><code>elementsTouched</code>: how many elements were modified or in the subtree of a modified element when executing the scenario.</li>
+      <li><code>touchCount</code>: upper bound on how many times the rule matched an element (will be high for rules matching many elements, and for rules matching a single element that is repeatedly modified in the chosen scenario).</li>
+    </ul>
+    <div>Low number of <code>elementsSeen</code> suggest potentially unused rule. Negative <code>Δ</code> highlights rules which may be deteriorating performance.</div></>
   };
 
 export const styleSheetsBenchmark: IBenchmark<
@@ -343,7 +348,8 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
         selector: rule.selector,
         source: rule.source,
         ruleIndex: rule.ruleIndex,
-        stylesheetIndex: rule.stylesheetIndex
+        stylesheetIndex: rule.stylesheetIndex,
+        bgMatches: document.querySelectorAll(rule.selector).length
       });
       // restore the rule
       rule.sheet.insertRule(rule.rule.cssText, rule.ruleIndex);
@@ -360,7 +366,8 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
       totalTime: Date.now() - start,
       type: 'time'
     };
-  }
+  },
+  interpretation: <><ul><li><code>bgMatches</code>: how many elements matched the rule at standby (as compared to during scenario execution); mostly useful to find too broad rules, or potentially unused rules with expensive selectors.</li></ul><div>Negative <code>Δ</code> highlights rules which may be deteriorating performance.</div></>
 };
 
 export const styleRuleGroupBenchmark: IBenchmark<

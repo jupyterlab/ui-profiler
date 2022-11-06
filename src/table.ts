@@ -93,9 +93,9 @@ export class TimingTable extends ResultTable {
     content: 100,
     selector: 175,
     rulesInBlock: 450,
-    IQM: 45,
-    min: 45,
-    Δ: 45,
+    IQM: 55,
+    min: 55,
+    Δ: 55,
     name: 150,
     resource: 500
   };
