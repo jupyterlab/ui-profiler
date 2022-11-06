@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab-benchmarks/ui-profiler",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "JupyterLab extension for profiling UI performance",
   "keywords": [
     "jupyter",
@@ -100,7 +100,13 @@
   },
   "jupyterlab": {
     "extension": true,
-    "outputDir": "jupyterlab_ui_profiler/labextension"
+    "outputDir": "jupyterlab_ui_profiler/labextension",
+    "sharedPackages": {
+        "@lumino/datagrid": {
+            "singleton": true,
+            "bundled": false
+        }
+    }
   },
   "jupyter-releaser": {
     "hooks": {
