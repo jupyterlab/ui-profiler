@@ -129,8 +129,9 @@
   display: grid;
   grid:
     'summary'
+    'options'
     'details';
-  grid-template-rows: min-content 1fr;
+  grid-template-rows: min-content min-content 1fr;
 }
 
 .up-BenchmarkResult-summary {
@@ -146,6 +147,31 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.up-BenchmarkResult-options {
+  grid-area: options;
+  display: grid;
+  min-height: 0;
+}
+
+.up-BenchmarkResult-options .filter {
+  display: none;
+}
+
+.up-BenchmarkResult-options details {
+  overflow: hidden;
+}
+
+.up-BenchmarkResult-options-benchmark,
+.up-BenchmarkResult-options-scenario {
+  width: 50%;
+  display: inline-block;
+  vertical-align: top;
+}
+
+.up-BenchmarkResult-options-benchmark .container > ul {
+  margin-top: 0;
 }
 
 .up-BenchmarkHistory {

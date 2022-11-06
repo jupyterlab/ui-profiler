@@ -7,6 +7,7 @@ import { ITranslator } from '@jupyterlab/translation';
 import { JSONExt, JSONObject } from '@lumino/coreutils';
 import { PathExt } from '@jupyterlab/coreutils';
 import { Signal, ISignal } from '@lumino/signaling';
+import { Component as JSONComponent } from '@jupyterlab/json-extension/lib/component';
 import {
   IBenchmark,
   IOutcome,
@@ -716,6 +717,23 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
             <div>CPU cores: {result.hardwareConcurrency}</div>
           </div>
         </div>
+        <div className="up-BenchmarkResult-options">
+          <details>
+            <summary>Options</summary>
+            <div className="up-BenchmarkResult-options-benchmark">
+              <b>Benchmark</b>
+              <JSONComponent data={result.options.benchmark} />
+            </div>
+            <div className="up-BenchmarkResult-options-scenario">
+              <b>Scenario</b>
+              {typeof result.options.scenario === 'undefined' ? (
+                <div>No options</div>
+              ) : (
+                <JSONComponent data={result.options.scenario} />
+              )}
+            </div>
+          </details>
+        </div>
         <div className="up-BenchmarkResult-details">
           {benchmark.interpretation ? (
             <details>
@@ -788,7 +806,10 @@ export class BenchmarkMonitor extends React.Component<
 }
 
 interface IBenchmarkData {
-  options: JSONObject;
+  options: {
+    scenario: JSONObject;
+    benchmark: JSONObject;
+  };
   benchmark: string;
   scenario: string;
   userAgent: string;
