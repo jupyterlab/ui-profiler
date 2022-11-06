@@ -57,8 +57,8 @@ exclude = [".github"]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-    "jupyterlab-ui-profiler/labextension/static/style.js",
-    "jupyterlab-ui-profiler/labextension/package.json",
+    "jupyterlab_ui_profiler/labextension/static/style.js",
+    "jupyterlab_ui_profiler/labextension/package.json",
 ]
 skip-if-exists = ["jupyterlab_ui_profiler/labextension/static/style.js"]
 
