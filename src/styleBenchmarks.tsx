@@ -244,12 +244,31 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       };
     },
     sortColumn: 'elementsSeen',
-    interpretation: <><ul>
-      <li><code>elementsSeen</code>: how many elements were seen on the entire page when executing the scenario.</li>
-      <li><code>elementsTouched</code>: how many elements were modified or in the subtree of a modified element when executing the scenario.</li>
-      <li><code>touchCount</code>: upper bound on how many times the rule matched an element (will be high for rules matching many elements, and for rules matching a single element that is repeatedly modified in the chosen scenario).</li>
-    </ul>
-    <div>Low number of <code>elementsSeen</code> suggest potentially unused rule. Negative <code>Δ</code> highlights rules which may be deteriorating performance.</div></>
+    interpretation: (
+      <>
+        <ul>
+          <li>
+            <code>elementsSeen</code>: how many elements were seen on the entire
+            page when executing the scenario.
+          </li>
+          <li>
+            <code>elementsTouched</code>: how many elements were modified or in
+            the subtree of a modified element when executing the scenario.
+          </li>
+          <li>
+            <code>touchCount</code>: upper bound on how many times the rule
+            matched an element (will be high for rules matching many elements,
+            and for rules matching a single element that is repeatedly modified
+            in the chosen scenario).
+          </li>
+        </ul>
+        <div>
+          Low number of <code>elementsSeen</code> suggest potentially unused
+          rule. Negative <code>Δ</code> highlights rules which may be
+          deteriorating performance.
+        </div>
+      </>
+    )
   };
 
 export const styleSheetsBenchmark: IBenchmark<
@@ -367,7 +386,21 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
       type: 'time'
     };
   },
-  interpretation: <><ul><li><code>bgMatches</code>: how many elements matched the rule at standby (as compared to during scenario execution); mostly useful to find too broad rules, or potentially unused rules with expensive selectors.</li></ul><div>Negative <code>Δ</code> highlights rules which may be deteriorating performance.</div></>
+  interpretation: (
+    <>
+      <ul>
+        <li>
+          <code>bgMatches</code>: how many elements matched the rule at standby
+          (as compared to during scenario execution); mostly useful to find too
+          broad rules, or potentially unused rules with expensive selectors.
+        </li>
+      </ul>
+      <div>
+        Negative <code>Δ</code> highlights rules which may be deteriorating
+        performance.
+      </div>
+    </>
+  )
 };
 
 export const styleRuleGroupBenchmark: IBenchmark<
