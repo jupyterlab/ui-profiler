@@ -149,12 +149,8 @@ export class TimingTable extends ResultTable {
       }
       return result;
     });
-    const first = results[0];
-    if (!first) {
-      throw new Error('No results to create a table!');
-    }
     this.results = results;
-    this.columnNames = Object.keys(first);
+    this.columnNames = results.length > 0 ? Object.keys(results[0]) : [];
     this.sortColumn = options.sortColumn || 'IQM';
     this.sortOrder = options.lowerIsBetter ? 'ascending' : 'descending';
     this._setupDataModel();
@@ -162,8 +158,8 @@ export class TimingTable extends ResultTable {
   }
 
   private _createSortFunction() {
-    const first = this.results[0];
-    if (typeof first[this.sortColumn] === 'number') {
+    const first = this.results.length > 0 ? this.results[0] : null;
+    if (first !== null && typeof first[this.sortColumn] === 'number') {
       if (this.sortOrder === 'ascending') {
         return ((a: ITimeMeasurement, b: ITimeMeasurement) =>
           b[this.sortColumn] - a[this.sortColumn]).bind(this);
