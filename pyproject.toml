@@ -51,7 +51,7 @@ artifacts = ["jupyterlab_ui_profiler/labextension"]
 "jupyter-config/nb-config" = "etc/jupyter/jupyter_notebook_config.d"
 
 [tool.hatch.build.targets.sdist]
-exclude = [".github"]
+exclude = [".github", "binder"]
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]

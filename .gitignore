@@ -8,6 +8,14 @@ node_modules/
 *.tsbuildinfo
 jupyterlab_ui_profiler/labextension
 
+# custom
+archive/
+ui-profiler-results/
+.virtual_documents/
+*.ipynb
+yarn-error.log
+*.swp
+
 # Integration tests
 ui-tests/test-results/
 ui-tests/playwright-report/
