@@ -611,7 +611,11 @@ interface IResultProps<T extends IOutcome> {
 function timingSummary(timing: ITimingOutcome): JSX.Element {
   return (
     <>
-      <div>
+      <div
+        title={
+          timing.reference.sort().map(Statistic.round).join(' ms\n') + ' ms'
+        }
+      >
         Reference: IQM:{' '}
         {Statistic.round(Statistic.interQuartileMean(timing.reference), 1)} ms,
         mean: {Statistic.round(Statistic.mean(timing.reference), 1)} ms, min:{' '}
@@ -961,7 +965,7 @@ export class BenchmarkLauncher extends React.Component<
       isRunning: true
     });
     try {
-      // copy to prevent user inadertedly changing what is being run
+      // copy to prevent user inadvertedly changing what is being run
       const scheduledBenchmarks = [...this.state.benchmarks];
       const scheduledScenarios = [...this.state.scenarios];
       const config = JSONExt.deepCopy(this._config as any) as IConfigValue;

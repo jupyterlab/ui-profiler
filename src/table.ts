@@ -129,7 +129,7 @@ export class TimingTable extends ResultTable {
           Statistic.interQuartileMean(result.times) - referenceIQM,
           1
         );
-        result['Δ%'] = Statistic.round(result['Δ'] / referenceIQM, 1);
+        result['Δ%'] = Statistic.round((100 * result['Δ']) / referenceIQM, 1);
       }
       if (result.source) {
         result['source'] = result['source']
