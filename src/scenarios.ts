@@ -244,7 +244,7 @@ export class CompleterScenario
 
     if (!this.useNotebook) {
       // Scroll down a little bit to avoid out of view bug
-      this.editor!.scrollBy({
+      this.editor!.querySelector('.CodeMirror-scroll')!.scrollBy({
         top: 500,
         left: 0,
         behavior: 'smooth'

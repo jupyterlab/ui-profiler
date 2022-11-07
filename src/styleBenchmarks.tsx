@@ -293,9 +293,7 @@ export const styleSheetsBenchmark: IBenchmark<
     const results: IStylesheetResult[] = [];
     let j = 0;
     let sheetIndex = 0;
-    const stylesWithSheets = styles.filter(style => {
-      style.sheet;
-    });
+    const stylesWithSheets = styles.filter(style => style.sheet);
     if (stylesWithSheets.length !== styles.length) {
       console.log(
         'Skipped',
