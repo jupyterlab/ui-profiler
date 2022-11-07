@@ -241,6 +241,16 @@ export class CompleterScenario
       text = tokens.join('\n');
     }
     await insertText(this.jupyterApp, text);
+
+    if (!this.useNotebook) {
+      // Scroll down a little bit to avoid out of view bug
+      this.editor!.scrollBy({
+        top: 500,
+        left: 0,
+        behavior: 'smooth'
+      });
+    }
+
     // first run is flaky
     try {
       await this.run();
