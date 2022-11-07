@@ -101,7 +101,7 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       if (scenario.setupSuite) {
         await scenario.setupSuite();
       }
-      const reference = await benchmark(scenario, n, true);
+      const reference = await benchmark(scenario, n * 2, true);
       console.log('Reference for', scenario.name, 'is:', reference);
 
       const observeEverythingConfig = {
@@ -288,35 +288,51 @@ export const styleSheetsBenchmark: IBenchmark<
       await scenario.setupSuite();
     }
     const styles = [...document.querySelectorAll('style')];
-    const reference = await benchmark(scenario, n, true);
+    const reference = await benchmark(scenario, n * 2, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IStylesheetResult[] = [];
     let j = 0;
+    let sheetIndex = 0;
+    const stylesWithSheets = styles.filter(style => {
+      style.sheet;
+    });
+    if (stylesWithSheets.length !== styles.length) {
+      console.log(
+        'Skipped',
+        styles.length - stylesWithSheets.length,
+        'style tags without stylesheets (out of',
+        styles.length,
+        'total)'
+      );
+    }
     for (const style of styles) {
       const sheet = style.sheet;
-      progress?.emit({ percentage: (100 * j) / styles.length });
+      // Always increment the sheet index.
+      sheetIndex++;
       if (!sheet) {
-        console.log(
-          'Skipping style tag without stylesheet',
-          j,
-          'out of',
-          styles.length
-        );
         continue;
       }
-      console.log('Benchmarking stylesheet', j, 'out of', styles.length);
+
+      // Only increment the loop control variable if style included in denominator.
+      progress?.emit({ percentage: (100 * j) / stylesWithSheets.length });
       j++;
+
+      // Benchmark the style.
       sheet.disabled = true;
       await layoutReady();
       const measurements = await benchmark(scenario, n, true);
       await layoutReady();
       sheet.disabled = false;
+
+      // Extract CSS map
       const cssMap = await extractSourceMap(style.textContent);
+
+      // Store result.
       results.push({
         ...measurements,
         content: style.textContent,
         source: cssMap != null ? cssMap.sources[0] : null,
-        stylesheetIndex: j
+        stylesheetIndex: sheetIndex
       });
     }
     if (scenario.cleanupSuite) {
@@ -351,7 +367,7 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
       await scenario.setupSuite();
     }
     const styles = [...document.querySelectorAll('style')];
-    const reference = await benchmark(scenario, n, true);
+    const reference = await benchmark(scenario, n * 2, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleResult[] = [];
     const rules = await collectRules(styles, { skipPattern });
@@ -425,7 +441,7 @@ export const styleRuleGroupBenchmark: IBenchmark<
       await scenario.setupSuite();
     }
     let styles = [...document.querySelectorAll('style')];
-    const reference = await benchmark(scenario, n, true);
+    const reference = await benchmark(scenario, n * 2, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleBlockResult[] = [];
     const randomizations = options.sheetRandomizations || 0;
