@@ -313,6 +313,7 @@
   padding: 10px;
   box-sizing: border-box;
   padding-bottom: 8px;
+  pointer-events: none;
 }
 
 .up-BenchmarkLauncher-launchbar-buttons {
@@ -323,4 +324,5 @@
 .up-BenchmarkMonitor,
 .up-BenchmarkLauncher-launchbar-buttons {
   backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
