@@ -617,8 +617,10 @@ function timingSummary(timing: ITimingOutcome): JSX.Element {
         }
       >
         Reference: IQM:{' '}
-        {Statistic.round(Statistic.interQuartileMean(timing.reference), 1)} ms,
-        mean: {Statistic.round(Statistic.mean(timing.reference), 1)} ms, min:{' '}
+        {Statistic.round(Statistic.interQuartileMean(timing.reference), 1)} [
+        {Statistic.round(Statistic.quartile(timing.reference, 1), 1)} –{' '}
+        {Statistic.round(Statistic.quartile(timing.reference, 3), 1)}] ms, mean:{' '}
+        {Statistic.round(Statistic.mean(timing.reference), 1)} ms, min:{' '}
         {Statistic.round(Statistic.min(timing.reference), 1)} ms
       </div>
       <div>Total time: {formatTime(timing.totalTime)}</div>
