@@ -10,14 +10,47 @@ export namespace Statistic {
     return sum(numbers) / numbers.length;
   }
 
+  /**
+   * Implements CDF-based quantile, method four in http://jse.amstat.org/v14n3/langford.html
+   */
+  export function percentile(numbers: number[], percentile: number): number {
+    numbers = numbers.sort((a, b) => a - b);
+    const np = numbers.length * percentile;
+    // is it an integer (float precision aside?)
+    if (Math.abs(np - Math.round(np)) < 0.0001) {
+      return (numbers[Math.ceil(np) - 1] + numbers[Math.floor(np + 1) - 1]) / 2;
+    }
+    return numbers[Math.ceil(np) - 1];
+  }
+
+  export function quartile(numbers: number[], quartile: 1 | 2 | 3): number {
+    return percentile(numbers, 0.25 * quartile);
+  }
+
+  /**
+   * Implements corrected sample standard deviation.
+   */
+  export function standardDeviation(numbers: number[]): number {
+    const m = mean(numbers);
+    return Math.sqrt(
+      (sum(numbers.map(n => Math.pow(n - m, 2))) * 1) / (numbers.length - 1)
+    );
+  }
+
+  /**
+   * Implements sample standard error.
+   */
+  export function standardError(numbers: number[]): number {
+    return standardDeviation(numbers) / Math.sqrt(numbers.length);
+  }
+
   export function interQuartileMean(numbers: number[]): number {
     numbers = numbers.sort((a, b) => a - b);
+    const q = Math.floor(numbers.length / 4);
     if (numbers.length % 4 === 0) {
-      const q = Math.floor(numbers.length / 4);
       return mean(numbers.slice(q, numbers.length - q));
     } else {
       const iqrSpan = (numbers.length / 4) * 2;
-      const q = Math.floor(numbers.length / 4);
       const toConsider = numbers.slice(q, numbers.length - q);
       const full = toConsider.length - 2;
       const fraction = (iqrSpan - full) / 2;

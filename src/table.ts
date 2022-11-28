@@ -95,8 +95,12 @@ export class TimingTable extends ResultTable {
     rulesInBlock: 450,
     IQM: 55,
     min: 55,
-    Δ: 55,
-    'Δ%': 55,
+    ΔIQM: 0,
+    'ΔIQM%': 60,
+    Q1: 55,
+    Q3: 55,
+    ΔQ1: 0,
+    'ΔQ1%': 55,
     name: 150,
     resource: 500
   };
@@ -104,9 +108,6 @@ export class TimingTable extends ResultTable {
   constructor(options: ITimingTableOptions) {
     super();
     this.stateSource = options.stateSource;
-    const referenceIQM = options.reference
-      ? Statistic.interQuartileMean(options.reference)
-      : null;
     const anyErrors = options.measurements.some(
       result => result.errors != null && result.errors.length !== 0
     );
@@ -120,16 +121,31 @@ export class TimingTable extends ResultTable {
       result['times'] = result.times.map(t => Statistic.round(t, 1));
       result['min'] = Statistic.round(Statistic.min(result.times), 1);
       result['mean'] = Statistic.round(Statistic.mean(result.times), 1);
+      result['Q1'] = Statistic.round(Statistic.quartile(result.times, 1), 1);
       result['IQM'] = Statistic.round(
         Statistic.interQuartileMean(result.times),
         1
       );
-      if (referenceIQM !== null) {
-        result['Δ'] = Statistic.round(
+      result['Q3'] = Statistic.round(Statistic.quartile(result.times, 3), 1);
+      if (options.reference) {
+        const referenceIQM = Statistic.interQuartileMean(options.reference);
+        result['ΔIQM'] = Statistic.round(
           Statistic.interQuartileMean(result.times) - referenceIQM,
           1
         );
-        result['Δ%'] = Statistic.round((100 * result['Δ']) / referenceIQM, 1);
+        result['ΔIQM%'] = Statistic.round(
+          (100 * result['ΔIQM']) / referenceIQM,
+          1
+        );
+        const referenceQ1 = Statistic.quartile(options.reference, 1);
+        result['ΔQ1'] = Statistic.round(
+          Statistic.quartile(result.times, 1) - referenceQ1,
+          1
+        );
+        result['ΔQ1%'] = Statistic.round(
+          (100 * result['ΔQ1']) / referenceQ1,
+          1
+        );
       }
       if (result.source) {
         result['source'] = result['source']
@@ -153,7 +169,7 @@ export class TimingTable extends ResultTable {
     });
     this.results = results;
     this.columnNames = results.length > 0 ? Object.keys(results[0]) : [];
-    this.sortColumn = options.sortColumn || 'IQM';
+    this.sortColumn = options.sortColumn || 'Q1';
     this.sortOrder = options.lowerIsBetter ? 'ascending' : 'descending';
     this._setupDataModel();
     this.setupColumnWidths();

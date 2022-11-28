@@ -30,6 +30,64 @@ describe('Statistic.sum()', () => {
   });
 });
 
+describe('Statistic.quartile()', () => {
+  it('should handle case of no numbers by returning NaN', () => {
+    expect(Statistic.quartile([], 1)).toEqual(NaN);
+  });
+
+  it('should compute quartiles for odd numbers', () => {
+    const numbers = [6, 7, 15, 36, 39, 40, 41, 42, 43, 47, 49];
+    expect(Statistic.quartile(numbers, 1)).toEqual(15);
+    expect(Statistic.quartile(numbers, 2)).toEqual(40);
+    expect(Statistic.quartile(numbers, 3)).toEqual(43);
+  });
+
+  it('should compute quartiles for even numbers', () => {
+    const numbers = [7, 15, 36, 39, 40, 41];
+    expect(Statistic.quartile(numbers, 1)).toEqual(15);
+    expect(Statistic.quartile(numbers, 2)).toEqual(37.5);
+    expect(Statistic.quartile(numbers, 3)).toEqual(40);
+  });
+
+  it.each([
+    [[1, 2, 3, 4]],
+    [[1, 2, 3, 4, 5]],
+    [[1, 2, 3, 4, 5, 6]],
+    [[1, 2, 3, 4, 5, 6, 7]]
+  ])('quartiles should be invariant to duplication %p', (numbers: number[]) => {
+    const doubled = [...numbers, ...numbers];
+    expect(Statistic.quartile(numbers, 1)).toEqual(
+      Statistic.quartile(doubled, 1)
+    );
+    expect(Statistic.quartile(numbers, 2)).toEqual(
+      Statistic.quartile(doubled, 2)
+    );
+    expect(Statistic.quartile(numbers, 3)).toEqual(
+      Statistic.quartile(doubled, 3)
+    );
+  });
+});
+
+describe('Statistic.standardDeviation()', () => {
+  it('should handle case of no numbers by returning NaN', () => {
+    expect(Statistic.standardDeviation([])).toEqual(NaN);
+  });
+
+  it.each([
+    [[1, 2, 3], 1],
+    [[1, 2, 3, 4], 1.3],
+    [[1, 2, 3, 4, 5], 1.6],
+    [[1, 2, 3, 4, 5, 6], 1.9]
+  ])(
+    'should compute sample standard deviation for %p',
+    (numbers: number[], expected: number) => {
+      expect(Statistic.round(Statistic.standardDeviation(numbers), 1)).toEqual(
+        expected
+      );
+    }
+  );
+});
+
 describe('Statistic.interQuartileMean()', () => {
   it('should handle case of no numbers by returning NaN', () => {
     expect(Statistic.interQuartileMean([])).toEqual(NaN);
