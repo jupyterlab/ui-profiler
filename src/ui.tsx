@@ -1187,6 +1187,7 @@ export class BenchmarkLauncher extends React.Component<
                       this._config.benchmarks[benchmark.id] =
                         form.formData as JSONObject;
                     }}
+                    formData={this._config.benchmarks[benchmark.id]}
                     FieldTemplate={this.state.fieldTemplate}
                     ArrayFieldTemplate={this.state.arrayFieldTemplate}
                     ObjectFieldTemplate={this.state.objectFieldTemplate}
@@ -1220,6 +1221,7 @@ export class BenchmarkLauncher extends React.Component<
                       this._config.scenarios[scenario.id] =
                         form.formData as JSONObject;
                     }}
+                    formData={this._config.scenarios[scenario.id]}
                     FieldTemplate={this.state.fieldTemplate}
                     ArrayFieldTemplate={this.state.arrayFieldTemplate}
                     ObjectFieldTemplate={this.state.objectFieldTemplate}
