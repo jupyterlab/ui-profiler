@@ -86,12 +86,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
       },
       resultLocation: '/ui-profiler-results/'
     };
-    const content = new UIProfiler(options);
-    const widget = new MainAreaWidget({ content });
-    widget.id = 'ui-profiler-centre';
-    widget.title.label = 'UI Profiler';
-    widget.title.closable = true;
-    widget.title.icon = offlineBoltIcon;
+    let lastWidget: MainAreaWidget<UIProfiler> | null = null;
+
+    const createWidget = () => {
+      const content = new UIProfiler(options);
+      const widget = new MainAreaWidget({ content });
+      widget.id = 'ui-profiler-centre';
+      widget.title.label = 'UI Profiler';
+      widget.title.closable = true;
+      widget.title.icon = offlineBoltIcon;
+      return widget;
+    };
 
     const tracker = new WidgetTracker<MainAreaWidget<UIProfiler>>({
       namespace: 'ui-profiler'
@@ -99,6 +104,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     app.commands.addCommand(CommandIDs.openProfiler, {
       execute: async () => {
+        let widget: MainAreaWidget<UIProfiler>;
+        if (!lastWidget || lastWidget.isDisposed) {
+          widget = createWidget();
+        } else {
+          widget = lastWidget;
+        }
+        lastWidget = widget;
+
         if (!widget.isAttached) {
           // Attach the widget to the main work area if it's not there
           app.shell.add(widget, 'main');
