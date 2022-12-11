@@ -1,6 +1,11 @@
 import { JSONSchema7 } from 'json-schema';
 import type { Signal } from '@lumino/signaling';
 import { Statistic } from './statistics';
+import { reportTagCounts } from './utils';
+import { layoutReady } from './dramaturg';
+import benchmarkExecutionOptionsSchema from './schema/benchmark-execution.json';
+import type { ExecutionTimeBenchmarkOptions } from './types/_benchmark-execution';
+import { renderTimings } from './ui';
 
 export interface IScenario {
   id: string;
@@ -188,7 +193,8 @@ export async function profile(
 export async function benchmark(
   scenario: IScenario,
   n = 3,
-  inSuite = false
+  inSuite = false,
+  afterStep?: (step: number) => void
 ): Promise<ITimeMeasurement> {
   if (!inSuite && scenario.setupSuite) {
     await scenario.setupSuite();
@@ -211,6 +217,9 @@ export async function benchmark(
     if (scenario.cleanup) {
       await scenario.cleanup();
     }
+    if (afterStep) {
+      afterStep(i);
+    }
   }
   if (!inSuite && scenario.cleanupSuite) {
     await scenario.cleanupSuite();
@@ -220,3 +229,37 @@ export async function benchmark(
     errors
   };
 }
+
+export const executionTimeBenchmark: IBenchmark<ITimingOutcome> = {
+  id: 'execution-time',
+  name: 'Execution Time',
+  configSchema: benchmarkExecutionOptionsSchema as JSONSchema7,
+  run: async (
+    scenario: IScenario,
+    options: ExecutionTimeBenchmarkOptions,
+    progress
+  ): Promise<ITimingOutcome> => {
+    const n = options.repeats || 3;
+    const start = Date.now();
+    if (scenario.setupSuite) {
+      await scenario.setupSuite();
+    }
+    await layoutReady();
+    const reference = await benchmark(scenario, n, true, i =>
+      progress?.emit({ percentage: (100 * (i + 1)) / n })
+    );
+    await layoutReady();
+    if (scenario.cleanupSuite) {
+      await scenario.cleanupSuite();
+    }
+    progress?.emit({ percentage: 100 });
+    return {
+      reference: reference.times,
+      results: [reference],
+      tags: reportTagCounts(),
+      totalTime: Date.now() - start,
+      type: 'time'
+    };
+  },
+  render: renderTimings
+};

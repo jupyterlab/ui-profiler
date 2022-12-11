@@ -326,3 +326,49 @@
   backdrop-filter: blur(10px);
   pointer-events: auto;
 }
+
+.up-BoxPlot .point {
+  fill: var(--jp-layout-color1);
+  stroke: var(--jp-content-font-color1);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.up-BoxPlot .point:hover {
+  fill: var(--jp-accent-color1);
+  opacity: 1;
+}
+
+.up-BoxPlot .box {
+  fill: var(--jp-brand-color2);
+  stroke: var(--jp-brand-color1);
+  stroke-width: 2;
+  fill-opacity: 60%;
+  stroke-opacity: 100%;
+}
+
+.up-BoxPlot .box-line {
+  stroke: var(--jp-brand-color1);
+  stroke-width: 2;
+}
+
+.up-BoxPlot .box-line:hover {
+  stroke: var(--jp-brand-color0);
+}
+
+.up-BoxPlot .whisker {
+  stroke: var(--jp-brand-color1);
+  stroke-width: 2;
+}
+
+.up-BoxPlot .whisker:hover {
+  stroke: var(--jp-brand-color0);
+}
+
+.up-BoxPlot .timeline {
+  stroke: var(--jp-content-font-color1);
+}
+
+.up-BoxPlot .tickLabel {
+  fill: var(--jp-content-font-color1);
+}

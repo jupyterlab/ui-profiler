@@ -49,6 +49,17 @@ describe('Statistic.quartile()', () => {
     expect(Statistic.quartile(numbers, 3)).toEqual(40);
   });
 
+  it('should be invariant to order', () => {
+    const numbers = [41, 36, 15, 39, 40, 7];
+    expect(Statistic.quartile(numbers, 2)).toEqual(37.5);
+  });
+
+  it('should not modify order', () => {
+    const numbers = [41, 36, 15, 39, 40, 7];
+    Statistic.quartile(numbers, 2);
+    expect(numbers).toEqual([41, 36, 15, 39, 40, 7]);
+  });
+
   it.each([
     [[1, 2, 3, 4]],
     [[1, 2, 3, 4, 5]],
@@ -119,5 +130,16 @@ describe('Statistic.round()', () => {
     expect(Statistic.round(1 / 6, 1)).toEqual(0.2);
     expect(Statistic.round(1 / 6, 2)).toEqual(0.17);
     expect(Statistic.round(1 / 6, 3)).toEqual(0.167);
+  });
+});
+
+describe('standardNormalDensity', () => {
+  it('should calculate standard normal density', () => {
+    expect(Statistic.standardNormalDensity(0)).toEqual(
+      1 / (2 * Math.PI) ** 0.5
+    );
+    expect(Statistic.standardNormalDensity(+1)).toEqual(
+      Statistic.standardNormalDensity(-1)
+    );
   });
 });
