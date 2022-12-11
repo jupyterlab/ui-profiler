@@ -31,6 +31,9 @@ export namespace Statistic {
    * Implements corrected sample standard deviation.
    */
   export function standardDeviation(numbers: number[]): number {
+    if (numbers.length === 0) {
+      return NaN;
+    }
     const m = mean(numbers);
     return Math.sqrt(
       (sum(numbers.map(n => Math.pow(n - m, 2))) * 1) / (numbers.length - 1)
