@@ -1,3 +1,5 @@
+const SND_CONSTANT = 1 / (2 * Math.PI) ** 0.5;
+
 export namespace Statistic {
   export function min(numbers: number[]): number {
     return Math.min(...numbers);
@@ -14,7 +16,7 @@ export namespace Statistic {
    * Implements CDF-based quantile, method four in http://jse.amstat.org/v14n3/langford.html
    */
   export function percentile(numbers: number[], percentile: number): number {
-    numbers = numbers.sort((a, b) => a - b);
+    numbers = [...numbers].sort((a, b) => a - b);
     const np = numbers.length * percentile;
     // is it an integer (float precision aside?)
     if (Math.abs(np - Math.round(np)) < 0.0001) {
@@ -48,7 +50,7 @@ export namespace Statistic {
   }
 
   export function interQuartileMean(numbers: number[]): number {
-    numbers = numbers.sort((a, b) => a - b);
+    numbers = [...numbers].sort((a, b) => a - b);
     const q = Math.floor(numbers.length / 4);
     if (numbers.length % 4 === 0) {
       return mean(numbers.slice(q, numbers.length - q));
@@ -76,5 +78,20 @@ export namespace Statistic {
       return 0;
     }
     return numbers.reduce((a, b) => a + b);
+  }
+
+  export function standardNormalDensity(x: number): number {
+    return SND_CONSTANT * Math.E ** (-(x ** 2) / 2);
+  }
+
+  export function kernelDensityEstimate(
+    sample: number[],
+    x: number,
+    h = 2
+  ): number {
+    return (
+      (1 / (sample.length * h)) *
+      Statistic.sum(sample.map(xi => standardNormalDensity((x - xi) / h)))
+    );
   }
 }

@@ -27,7 +27,12 @@ import {
   CompleterScenario,
   ScrollScenario
 } from './scenarios';
-import { IBenchmark, ITimingOutcome, IProfilingOutcome } from './benchmark';
+import {
+  executionTimeBenchmark,
+  IBenchmark,
+  ITimingOutcome,
+  IProfilingOutcome
+} from './benchmark';
 import { IJupyterState } from './utils';
 
 namespace CommandIDs {
@@ -51,6 +56,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
   ) => {
     const options = {
       benchmarks: [
+        executionTimeBenchmark,
         styleSheetsBenchmark,
         styleRuleBenchmark,
         styleRuleGroupBenchmark,

@@ -294,6 +294,132 @@ interface IConfigValue {
   };
 }
 
+function ordinal(n: number): string {
+  const dec = n % 10;
+  const hun = n % 100;
+  if (dec > 3 || hun > 3 || dec === 0) {
+    return n + 'th';
+  }
+  return n + ['st', 'nd', 'rd'][dec - 1];
+}
+
+export function renderTimings(props: { outcome: ITimingOutcome }): JSX.Element {
+  const width = 750;
+  const height = 200;
+  const times = props.outcome.results.map(result => {
+    const maxTime = Math.max(...result.times);
+    const minTime = Math.min(...result.times);
+    const q1 = Statistic.quartile(result.times, 1);
+    const q3 = Statistic.quartile(result.times, 3);
+    const iqr = q3 - q1;
+    const higherWhisker = Math.min(q1 + 1.5 * iqr, maxTime);
+    const lowerWhisker = Math.max(q3 - 1.5 * iqr, minTime);
+    const boxSize = height / 3;
+    const toScreen = (x: number) => (x / maxTime) * width;
+
+    const densities = result.times.map(x =>
+      Statistic.kernelDensityEstimate(result.times, x)
+    );
+    const maxDensity = Math.max(...densities);
+
+    const circles = result.times.map((time, i) => {
+      const spread =
+        (((Math.random() - 0.5) * densities[i]) / maxDensity) * boxSize;
+      return (
+        <g>
+          <title>
+            {Statistic.round(time, 2)} ms, {ordinal(i)} repeat
+          </title>
+          <circle
+            cx={toScreen(time)}
+            cy={+height / 2 + spread}
+            r={2}
+            className="point"
+          />
+        </g>
+      );
+    });
+    const quartileLines = [1, 2, 3].map(q => {
+      const qValue = Statistic.quartile(result.times, q as 1 | 2 | 3);
+      const x1 = toScreen(qValue);
+      const y1 = height / 2 - boxSize / 2;
+      return (
+        <g>
+          <title>
+            {ordinal(q)} quartile: {Statistic.round(qValue, 2)} ms
+          </title>
+          <line
+            x1={x1}
+            y1={y1}
+            x2={x1}
+            y2={y1 + boxSize}
+            className="box-line"
+          />
+        </g>
+      );
+    });
+
+    return (
+      <svg viewBox={`0 0 ${width + 5} ${height}`} className="up-BoxPlot">
+        {circles}
+        <g>
+          <title>
+            Lower whisker, max(lowest value, q1 - 1.5 * IQR) ={' '}
+            {Statistic.round(lowerWhisker, 2)} ms
+          </title>
+          <line
+            x1={toScreen(lowerWhisker)}
+            y1={height / 2}
+            x2={toScreen(q1)}
+            y2={height / 2}
+            className="whisker"
+          />
+        </g>
+        <g>
+          <title>
+            Upper whisker, min(higher value, q3 + 1.5 * IQR) ={' '}
+            {Statistic.round(higherWhisker, 2)} ms
+          </title>
+          <line
+            x1={toScreen(q3)}
+            y1={height / 2}
+            x2={toScreen(higherWhisker)}
+            y2={height / 2}
+            className="whisker"
+          />
+        </g>
+        <rect
+          x={toScreen(q1)}
+          y={height / 2 - boxSize / 2}
+          width={toScreen(q3 - q1)}
+          height={boxSize}
+          className="box"
+        />
+        {quartileLines}
+        <line
+          x1="0"
+          x2={width}
+          y1={height - 15}
+          y2={height - 15}
+          className="timeline"
+        />
+        <text x="0" y={height} className="tickLabel">
+          0ms
+        </text>
+        <text
+          x={width}
+          y={height}
+          style={{ textAnchor: 'end' }}
+          className="tickLabel"
+        >
+          {Math.round(maxTime)}ms
+        </text>
+      </svg>
+    );
+  });
+  return <>{times}</>;
+}
+
 export function renderProfile(props: {
   outcome: IProfilingOutcome;
 }): JSX.Element {
