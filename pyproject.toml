@@ -27,6 +27,15 @@ dependencies = [
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 
 [project.optional-dependencies]
+docs = [
+  "myst-parser",
+  "myst-nb",
+  "pip",
+  "pydata-sphinx-theme",
+  "sphinx",
+  "sphinx-autobuild",
+  "sphinx-copybutton"
+]
 test = [
     "coverage",
     "pytest",
