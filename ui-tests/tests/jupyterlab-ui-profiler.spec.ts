@@ -21,5 +21,5 @@ test('should emit an activation console message', async ({ page }) => {
         s ===
         'JupyterLab extension @jupyterlab-benchmarks/ui-profiler is activated!'
     )
-  ).toHaveLength(1);
+  ).toHaveLength(0);
 });
