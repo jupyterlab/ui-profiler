@@ -8,6 +8,7 @@ JupyterLab extension for profiling UI performance.
 Note: when this extension is enabled, the server will return additional headers:
 
 - to allow high-precision `performance.now()` measurements in Firefox 79+:
+
   ```
   Cross-Origin-Opener-Policy: same-origin,
   Cross-Origin-Embedder-Policy: require-corp
