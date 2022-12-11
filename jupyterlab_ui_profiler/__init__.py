@@ -1,20 +1,10 @@
-import json
-from pathlib import Path
-
 from ._version import __version__
-
-
-HERE = Path(__file__).parent.resolve()
-
-
-with (HERE / "labextension" / "package.json").open() as fid:
-    data = json.load(fid)
 
 
 def _jupyter_labextension_paths():
     return [{
         "src": "labextension",
-        "dest": data["name"]
+        "dest": "@jupyterlab-benchmarks/ui-profiler"
     }]
 
 
@@ -40,7 +30,8 @@ def _load_jupyter_server_extension(server_app):
       # Allow self-profiling in Chrome.
       "Document-Policy": "js-profiling"
     })
-    server_app.log.info("Registered {name} server extension".format(**data))
+    name = "@jupyterlab-benchmarks/ui-profiler"
+    server_app.log.info(f"Registered {name} server extension")
 
 
 # For backward compatibility with notebook server - useful for Binder/JupyterHub
