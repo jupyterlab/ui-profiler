@@ -1,25 +1,23 @@
 import { expect, test } from '@jupyterlab/galata';
 
-/**
- * Don't load JupyterLab webpage before running the tests.
- * This is required to ensure we capture all log messages.
- */
-test.use({ autoGoto: false });
-
-test('should emit an activation console message', async ({ page }) => {
-  const logs: string[] = [];
-
-  page.on('console', message => {
-    logs.push(message.text());
+test('should display UI Profiler in Launcher', async ({ page }) => {
+  const section = page.locator('.jp-Launcher-section', {
+    has: page.locator('.jp-LauncherCard[title="Open JupyterLab UI Profiler"]')
   });
+  const handle = await page.waitForSelector(
+    '.jp-LauncherCard[title="Open JupyterLab UI Profiler"]'
+  );
+  await handle.focus();
+  expect(await section.screenshot()).toMatchSnapshot('launcher.png');
+});
 
-  await page.goto();
-
-  expect(
-    logs.filter(
-      s =>
-        s ===
-        'JupyterLab extension @jupyterlab-benchmarks/ui-profiler is activated!'
-    )
-  ).toHaveLength(0);
+test('should open UI Profiler', async ({ page }) => {
+  const handle = await page.waitForSelector(
+    '.jp-LauncherCard[title="Open JupyterLab UI Profiler"]'
+  );
+  await handle.click();
+  const panels = page.locator('.lm-DockPanel', {
+    has: page.locator('.up-UIProfiler')
+  });
+  expect(await panels.screenshot()).toMatchSnapshot('ui-profiler.png');
 });

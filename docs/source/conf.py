@@ -11,9 +11,15 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import shutil
 import sys
 import importlib.metadata
+from pathlib import Path
+from typing import List
 sys.path.insert(0, os.path.abspath('.'))
+
+
+HERE = Path(__file__).parent.resolve()
 
 
 # -- Project information -----------------------------------------------------
@@ -93,11 +99,40 @@ html_context = {
 }
 
 html_theme_options = {
-    "repository_url": github_repo_url,
-    "path_to_docs": "docs",
-    "use_fullscreen_button": True,
-    "use_repository_button": True,
-    "use_issues_button": True,
+    "navbar_end": ["search-field.html", "navbar-icon-links.html"],
     "use_edit_page_button": True,
-    "use_download_button": True,
+    "github_url": github_repo_url
 }
+
+
+IMAGES_FOLDER = "images"
+AUTOMATED_SCREENSHOTS_FOLDER = "ui-tests/tests"
+
+
+def copy_automated_screenshots(temp_folder: Path) -> List[Path]:
+    print(f"\n\n{temp_folder}\n")
+    docs = HERE.parent
+    root = docs.parent
+
+    src = root / AUTOMATED_SCREENSHOTS_FOLDER
+
+    temp_folder.mkdir(exist_ok=True)
+    copied_files = []
+    for img in src.rglob("*.png"):
+        target = temp_folder / (img.name.replace("-linux", ""))
+        shutil.copyfile(str(img), str(target))
+        copied_files.append(target)
+        print(target)
+
+    return copied_files
+
+
+def setup(app):
+    tmp_files = copy_automated_screenshots(Path(app.srcdir) / IMAGES_FOLDER)
+
+    def clean_code_files(app, exception):
+        """Remove temporary folder."""
+        for f in tmp_files:
+            f.unlink()
+
+    app.connect("build-finished", clean_code_files)

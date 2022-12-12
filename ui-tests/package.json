@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "@jupyterlab/galata": "^4.3.0"
+  },
+  "resolutions": {
+    "vega-lite": "~5.5.0"
   }
 }
