@@ -77,6 +77,9 @@ html_sidebars = {
   "**": []
 }
 
+myst_enable_extensions = [
+  "html_image"
+]
 
 html_favicon = "_static/logo-icon.png"
 
@@ -99,7 +102,6 @@ html_context = {
 }
 
 html_theme_options = {
-    "navbar_end": ["search-field.html", "navbar-icon-links.html"],
     "use_edit_page_button": True,
     "github_url": github_repo_url
 }
