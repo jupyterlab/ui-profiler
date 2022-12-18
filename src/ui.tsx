@@ -306,6 +306,7 @@ function ordinal(n: number): string {
 export function renderTimings(props: { outcome: ITimingOutcome }): JSX.Element {
   const width = 750;
   const height = 200;
+  const pointSize = 2;
   const times = props.outcome.results.map(result => {
     const maxTime = Math.max(...result.times);
     const minTime = Math.min(...result.times);
@@ -321,10 +322,26 @@ export function renderTimings(props: { outcome: ITimingOutcome }): JSX.Element {
       Statistic.kernelDensityEstimate(result.times, x)
     );
     const maxDensity = Math.max(...densities);
+    const nBuckets = Math.round(width / pointSize);
+    const xMin = 0;
+    const xMax = maxTime;
+    const bucketWidth = Math.ceil((xMax - xMin) / nBuckets);
+    const buckets: number[][] = Array.from(Array(nBuckets), () => []);
+    const bucketMap = new Array(result.times.length);
+    for (let i = 0; i < result.times.length; i++) {
+      const time = result.times[i];
+      const bucketId = Math.floor(time / bucketWidth);
+      buckets[bucketId].push(i);
+      bucketMap[i] = bucketId;
+    }
 
     const circles = result.times.map((time, i) => {
+      const bucketId = bucketMap[i];
+      const bucket = buckets[bucketId];
+      const posInBucket = bucket.indexOf(i);
       const spread =
-        (((Math.random() - 0.5) * densities[i]) / maxDensity) * boxSize;
+        (((posInBucket / bucket.length - 0.5) * densities[i]) / maxDensity) *
+        boxSize;
       return (
         <g>
           <title>
@@ -333,7 +350,7 @@ export function renderTimings(props: { outcome: ITimingOutcome }): JSX.Element {
           <circle
             cx={toScreen(time)}
             cy={+height / 2 + spread}
-            r={2}
+            r={pointSize}
             className="point"
           />
         </g>
@@ -492,6 +509,7 @@ export function renderProfile(props: {
         onChange={e => {
           setTraceSelection(Number(e.target.value));
         }}
+        className="up-trace-selector"
       >
         {props.outcome.results[0].traces.map((trace, i) => (
           <option value={i} key={'trace-' + i}>
@@ -700,7 +718,7 @@ export class BenchmarkHistory extends React.Component<
   }
 
   render(): JSX.Element {
-    const list = this.state.files.map(file => (
+    let list = this.state.files.map(file => (
       <li
         className={
           this.state.current === file.name
@@ -717,6 +735,13 @@ export class BenchmarkHistory extends React.Component<
         {file.name.replace('.profile.json', '')}
       </li>
     ));
+    if (!this.state.files.length) {
+      list = [
+        <li className="up-BenchmarkHistory-entry">
+          (No previous results found)
+        </li>
+      ];
+    }
     return (
       <div className="up-BenchmarkHistory">
         <h3 className="up-widget-heading">History</h3>

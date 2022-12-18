@@ -2,8 +2,13 @@
 
 [![Github Actions Status](https://github.com/jupyterlab/ui-profiler/workflows/Build/badge.svg)](https://github.com/jupyterlab/ui-profiler/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jupyterlab/ui-profiler/main?urlpath=lab)
+[![Documentation Status](https://readthedocs.org/projects/ui-profiler/badge/?version=latest)](http://ui-profiler.readthedocs.io/en/latest/)
 
 JupyterLab extension for profiling UI performance.
+
+![UI Profiler UI](https://raw.githubusercontent.com/jupyterlab/ui-profiler/main/ui-tests/tests/results.spec.ts-snapshots/ui-profiler-with-boxplot-linux.png)
+
+You can find more information in our [User Guide](http://ui-profiler.readthedocs.io/en/latest/en/user_guide.html).
 
 Note: when this extension is enabled, the server will return additional headers:
 
@@ -112,8 +117,22 @@ jlpm test
 This extension uses [Playwright](https://playwright.dev/docs/intro/) for the integration tests (aka user level tests).
 More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jupyterlab/tree/master/galata) is used to handle testing the extension in JupyterLab.
 
-More information are provided within the [ui-tests](./ui-tests/README.md) README.
+More information are provided within the [ui-tests](https://github.com/jupyterlab/ui-profiler/main/ui-tests/README.md) README.
+
+### Documentation
+
+To build locally:
+
+```
+make -C docs/ html SPHINXOPTS="-W"
+```
+
+To build in watch mode:
+
+```
+sphinx-autobuild docs/source docs/build/html
+```
 
 ### Packaging the extension
 
-See [RELEASE](RELEASE.md)
+See [RELEASE](https://github.com/jupyterlab/ui-profiler/main/RELEASE.md)

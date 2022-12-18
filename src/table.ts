@@ -1,4 +1,5 @@
 import { Signal, ISignal } from '@lumino/signaling';
+import { Message, IMessageHandler } from '@lumino/messaging';
 import {
   DataGrid,
   JSONModel,
@@ -88,7 +89,7 @@ interface ITimingTableOptions {
 }
 
 export class TimingTable extends ResultTable {
-  readonly columnWidths = {
+  readonly columnWidths: Record<string, number> = {
     source: 325,
     content: 100,
     selector: 175,
@@ -98,7 +99,6 @@ export class TimingTable extends ResultTable {
     ΔIQM: 0,
     'ΔIQM%': 60,
     Q1: 55,
-    Q3: 55,
     ΔQ1: 0,
     'ΔQ1%': 55,
     name: 150,
@@ -126,7 +126,6 @@ export class TimingTable extends ResultTable {
         Statistic.interQuartileMean(result.times),
         1
       );
-      result['Q3'] = Statistic.round(Statistic.quartile(result.times, 3), 1);
       if (options.reference) {
         const referenceIQM = Statistic.interQuartileMean(options.reference);
         result['ΔIQM'] = Statistic.round(
@@ -173,6 +172,63 @@ export class TimingTable extends ResultTable {
     this.sortOrder = options.lowerIsBetter ? 'ascending' : 'descending';
     this._setupDataModel();
     this.setupColumnWidths();
+  }
+
+  messageHook(handler: IMessageHandler, msg: Message): boolean {
+    const reply = super.messageHook(handler, msg);
+    if (msg.type === 'resize' || msg.type === 'column-resize-request') {
+      if (this._squeezeOngoing) {
+        this._squeezeOngoing = false;
+      } else {
+        this._squeezeColumsIfNeeded();
+      }
+    }
+    return reply;
+  }
+
+  /**
+   * Reduce size of the largest column if the table does not fit.
+   */
+  private _squeezeColumsIfNeeded() {
+    const scaleDownFactor = 0.8;
+    let maxSize = 0;
+    let totalSize = 0;
+    let largest: number | null = null;
+    for (let i = 0; i < this.columnNames.length; i++) {
+      const size = this.columnSize('body', i);
+      totalSize += size;
+      if (size > maxSize) {
+        largest = i;
+        maxSize = size;
+      }
+    }
+    if (largest == null) {
+      return;
+    }
+    const name = this.columnNames[largest];
+    const defaultSize = this.columnWidths[name];
+    if (defaultSize == null) {
+      // this column width was not pre-defined
+      return;
+    }
+    const reducedSize = Math.round(defaultSize * scaleDownFactor);
+    if (maxSize !== defaultSize && maxSize !== reducedSize) {
+      // column was resized by user or not yet set up
+      return;
+    }
+    if (this.pageWidth === 0) {
+      // page width not known yet
+      return;
+    }
+    this._squeezeOngoing = true;
+    if (totalSize > this.pageWidth) {
+      this.resizeColumn('body', largest, reducedSize);
+    } else {
+      const increase = defaultSize - reducedSize;
+      if (totalSize + increase < this.pageWidth) {
+        this.resizeColumn('body', largest, defaultSize);
+      }
+    }
   }
 
   private _createSortFunction() {
@@ -262,4 +318,5 @@ export class TimingTable extends ResultTable {
   protected results: ITimeMeasurement[];
   protected sortColumn: string;
   protected sortOrder: 'ascending' | 'descending' = 'ascending';
+  private _squeezeOngoing = false;
 }
