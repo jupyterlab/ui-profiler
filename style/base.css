@@ -12,7 +12,7 @@
   grid-template:
     'launcher launcher'
     'history result';
-  grid-template-columns: minmax(100px, min-content) minmax(200px, 1fr);
+  grid-template-columns: minmax(50px, min-content) minmax(200px, 1fr);
   grid-template-rows: 0fr 1fr;
 }
 
@@ -190,7 +190,8 @@
   padding: 0;
 }
 
-.up-BenchmarkHistory-file {
+.up-BenchmarkHistory-file,
+.up-BenchmarkHistory-entry {
   padding: 4px 8px;
   border-right: 5px solid transparent;
 }
@@ -301,6 +302,7 @@
   top: 0;
   pointer-events: none;
   border-left: 2px dotted var(--jp-content-font-color3);
+  opacity: 0.5;
 }
 
 .up-BenchmarkLauncher-launchbar {
