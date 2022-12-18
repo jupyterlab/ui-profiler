@@ -99,7 +99,6 @@ export class TimingTable extends ResultTable {
     ΔIQM: 0,
     'ΔIQM%': 60,
     Q1: 55,
-    Q3: 55,
     ΔQ1: 0,
     'ΔQ1%': 55,
     name: 150,
@@ -127,7 +126,6 @@ export class TimingTable extends ResultTable {
         Statistic.interQuartileMean(result.times),
         1
       );
-      result['Q3'] = Statistic.round(Statistic.quartile(result.times, 3), 1);
       if (options.reference) {
         const referenceIQM = Statistic.interQuartileMean(options.reference);
         result['ΔIQM'] = Statistic.round(
