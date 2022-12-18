@@ -6,6 +6,7 @@
    :caption: Contents:
 
    user_guide
+   changelog
 
 
 Indices and tables
