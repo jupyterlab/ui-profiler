@@ -114,7 +114,6 @@ More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jup
 
 More information are provided within the [ui-tests](./ui-tests/README.md) README.
 
-
 ### Documentation
 
 To build locally:
@@ -128,7 +127,6 @@ To build in watch mode:
 ```
 sphinx-autobuild docs/source docs/build/html
 ```
-
 
 ### Packaging the extension
 
