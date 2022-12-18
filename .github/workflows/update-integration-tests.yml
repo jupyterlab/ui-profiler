@@ -32,6 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           set -eux
+          python -m pip install jupyterlab
           jlpm
           python -m pip install .
 
