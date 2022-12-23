@@ -87,8 +87,14 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
     run: async (
       scenario: IScenario,
       options: StyleRuleUsageOptions = {},
-      progress
+      progress,
+      stopSignal
     ): Promise<ITimingOutcome<IRuleResult>> => {
+      let stop = false;
+      const stopListener = () => {
+        stop = true;
+      };
+      stopSignal?.connect(stopListener);
       const n = options.repeats || 3;
       const start = Date.now();
       const skipPattern = options.skipPattern
@@ -207,6 +213,9 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
 
       // Estimate impact of relevant rules on the scenario performance.
       for (let i = 0; i < rules.length; i++) {
+        if (stop) {
+          break;
+        }
         progress?.emit({ percentage: (100 * (i + 0.5)) / rules.length });
         const rule = rules[i];
         // Benchmark without the rule.
@@ -233,14 +242,14 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
         await scenario.cleanupSuite();
       }
 
-      progress?.emit({ percentage: 100 });
-
+      stopSignal?.disconnect(stopListener);
       return {
         results: results,
         reference: reference.times,
         tags: reportTagCounts(),
         totalTime: Date.now() - start,
-        type: 'time'
+        type: 'time',
+        interrupted: stop
       };
     },
     sortColumn: 'elementsSeen',
@@ -280,10 +289,16 @@ export const styleSheetsBenchmark: IBenchmark<
   run: async (
     scenario: IScenario,
     options: BenchmarkOptions = {},
-    progress
+    progress,
+    stopSignal
   ): Promise<ITimingOutcome<IStylesheetResult>> => {
     const n = options.repeats || 3;
     const start = Date.now();
+    let stop = false;
+    const stopListener = () => {
+      stop = true;
+    };
+    stopSignal?.connect(stopListener);
     if (scenario.setupSuite) {
       await scenario.setupSuite();
     }
@@ -304,6 +319,10 @@ export const styleSheetsBenchmark: IBenchmark<
       );
     }
     for (const style of styles) {
+      if (stop) {
+        break;
+      }
+
       const sheet = style.sheet;
       // Always increment the sheet index.
       sheetIndex++;
@@ -336,13 +355,14 @@ export const styleSheetsBenchmark: IBenchmark<
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
-    progress?.emit({ percentage: 100 });
+    stopSignal?.disconnect(stopListener);
     return {
       results: results,
       reference: reference.times,
       tags: reportTagCounts(),
       totalTime: Date.now() - start,
-      type: 'time'
+      type: 'time',
+      interrupted: stop
     };
   }
 };
@@ -354,8 +374,14 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
   run: async (
     scenario: IScenario,
     options: StyleRuleBenchmarkOptions = {},
-    progress
+    progress,
+    stopSignal
   ): Promise<ITimingOutcome<IRuleResult>> => {
+    let stop = false;
+    const stopListener = () => {
+      stop = true;
+    };
+    stopSignal?.connect(stopListener);
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
@@ -370,6 +396,9 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
     const results: IRuleResult[] = [];
     const rules = await collectRules(styles, { skipPattern });
     for (let i = 0; i < rules.length; i++) {
+      if (stop) {
+        break;
+      }
       progress?.emit({ percentage: (100 * i) / rules.length });
       const rule = rules[i];
       // benchmark without the rule
@@ -391,13 +420,14 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
-    progress?.emit({ percentage: 100 });
+    stopSignal?.disconnect(stopListener);
     return {
       results: results,
       reference: reference.times,
       tags: reportTagCounts(),
       totalTime: Date.now() - start,
-      type: 'time'
+      type: 'time',
+      interrupted: stop
     };
   },
   interpretation: (
@@ -426,8 +456,14 @@ export const styleRuleGroupBenchmark: IBenchmark<
   run: async (
     scenario: IScenario,
     options: StyleRuleGroupBenchmarkOptions = {},
-    progress
+    progress,
+    stopSignal
   ): Promise<ITimingOutcome<IRuleBlockResult>> => {
+    let stop = false;
+    const stopListener = () => {
+      stop = true;
+    };
+    stopSignal?.connect(stopListener);
     const n = options.repeats || 3;
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
@@ -450,6 +486,9 @@ export const styleRuleGroupBenchmark: IBenchmark<
       randomization < randomizations + 1;
       randomization++
     ) {
+      if (stop) {
+        break;
+      }
       if (randomization !== 0) {
         styles = shuffled(styles);
       }
@@ -459,6 +498,9 @@ export const styleRuleGroupBenchmark: IBenchmark<
       );
 
       for (let blocks = minBlocks; blocks <= maxBlocks; blocks++) {
+        if (stop) {
+          break;
+        }
         step += 1;
         progress?.emit({ percentage: (100 * step) / total });
         const rulesPerBlock = Math.round(allRules.length / blocks);
@@ -500,13 +542,14 @@ export const styleRuleGroupBenchmark: IBenchmark<
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
-    progress?.emit({ percentage: 100 });
+    stopSignal?.disconnect(stopListener);
     return {
       results: results,
       reference: reference.times,
       tags: reportTagCounts(),
       totalTime: Date.now() - start,
-      type: 'time'
+      type: 'time',
+      interrupted: stop
     };
   },
   render: renderBlockResult

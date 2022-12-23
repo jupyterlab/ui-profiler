@@ -937,17 +937,30 @@ export class BenchmarkMonitor extends React.Component<
             }
             let elapsed = NaN;
             let remaining = NaN;
-            let status: string;
+            let status = 'up-mod-waiting';
+
+            if (args.interrupted) {
+              status = 'up-mod-interrupted';
+            }
+            if (args.errored) {
+              status += ' up-mod-errored';
+            }
+
             if (this.start) {
               const now =
-                args.percentage === 100 && this.end ? this.end : new Date();
+                (args.percentage === 100 || args.interrupted || args.errored) &&
+                this.end
+                  ? this.end
+                  : new Date();
               this.end = now;
               elapsed = now.getTime() - this.start.getTime();
-              remaining = ((100 - args.percentage) * elapsed) / args.percentage;
-              status = args.percentage === 100 ? 'up-mod-completed' : '';
-            } else {
-              status = 'up-mod-waiting';
+              if (!args.interrupted && !args.errored) {
+                remaining =
+                  ((100 - args.percentage) * elapsed) / args.percentage;
+                status = args.percentage === 100 ? 'up-mod-completed' : '';
+              }
             }
+
             return (
               <div className={status + ' up-BenchmarkMonitor-content'}>
                 <div>
@@ -1021,6 +1034,7 @@ export class BenchmarkLauncher extends React.Component<
 > {
   constructor(props: ILauncherProps) {
     super(props);
+    this._stop = new Signal(this);
     this.state = {
       benchmarks: [props.benchmarks[0]],
       scenarios: [props.scenarios[0]],
@@ -1030,6 +1044,7 @@ export class BenchmarkLauncher extends React.Component<
       isRunning: false
     };
     this.runSelected = this.runSelected.bind(this);
+    this.stopCurrent = this.stopCurrent.bind(this);
   }
   state: IProfilerState;
 
@@ -1047,9 +1062,14 @@ export class BenchmarkLauncher extends React.Component<
     const result = (await benchmark.run(
       scenario,
       options.benchmark,
-      this.props.progress
+      this.props.progress,
+      this._stop
     )) as T;
-    this.props.progress.emit({ percentage: 100 });
+    if (result.interrupted) {
+      this.props.progress.emit({ percentage: NaN, interrupted: true });
+    } else {
+      this.props.progress.emit({ percentage: 100 });
+    }
     const data: Omit<IBenchmarkResultBase<T>, 'id'> = {
       result: result,
       options: options,
@@ -1118,6 +1138,11 @@ export class BenchmarkLauncher extends React.Component<
     this.setState({
       isRunning: true
     });
+    let stop = false;
+    const stopListener = () => {
+      stop = true;
+    };
+    this._stop.connect(stopListener);
     try {
       // copy to prevent user inadvertedly changing what is being run
       const scheduledBenchmarks = [...this.state.benchmarks];
@@ -1125,6 +1150,9 @@ export class BenchmarkLauncher extends React.Component<
       const config = JSONExt.deepCopy(this._config as any) as IConfigValue;
       for (const benchmark of scheduledBenchmarks) {
         for (const scenario of scheduledScenarios) {
+          if (stop) {
+            break;
+          }
           const result = await this.runBenchmark(scenario, benchmark, config);
           const filename = benchmarkFilename(result);
           this.props.upload(
@@ -1140,11 +1168,21 @@ export class BenchmarkLauncher extends React.Component<
         }
       }
     } catch (e) {
-      void showErrorMessage('Benchmark failed', e);
+      if (!stop) {
+        this.props.progress.emit({ percentage: NaN, errored: true });
+        void showErrorMessage('Benchmark failed', e);
+      } else {
+        this.props.progress.emit({ percentage: NaN, interrupted: true });
+      }
     }
+    this._stop.disconnect(stopListener);
     this.setState({
       isRunning: false
     });
+  }
+
+  stopCurrent(): void {
+    this._stop.emit();
   }
 
   render(): JSX.Element {
@@ -1160,7 +1198,7 @@ export class BenchmarkLauncher extends React.Component<
         >
           <input
             type="checkbox"
-            checked={this.state.benchmarks.includes(benchmark)}
+            defaultChecked={this.state.benchmarks.includes(benchmark)}
             className="up-BenchmarkLauncher-choice-input"
             disabled={disabled}
             value={benchmark.id}
@@ -1174,7 +1212,7 @@ export class BenchmarkLauncher extends React.Component<
         <label key={scenario.id}>
           <input
             type="checkbox"
-            checked={this.state.scenarios.includes(scenario)}
+            defaultChecked={this.state.scenarios.includes(scenario)}
             className="up-BenchmarkLauncher-choice-input"
             value={scenario.id}
           />
@@ -1182,7 +1220,6 @@ export class BenchmarkLauncher extends React.Component<
         </label>
       );
     });
-    // TODO: stop button
     // TODO: custom widget for path selection, FileDialog.getOpenFiles
     return (
       <div className="up-BenchmarkLauncher" style={{ height: '450px' }}>
@@ -1263,7 +1300,10 @@ export class BenchmarkLauncher extends React.Component<
           <div className="up-BenchmarkLauncher-launchbar-buttons">
             <button
               onClick={this.runSelected}
-              className="jp-mod-styled jp-mod-accept"
+              className={
+                'jp-mod-styled jp-mod-accept' +
+                (this.state.isRunning ? ' jp-mod-hidden' : '')
+              }
               disabled={
                 this.state.scenarios.length === 0 ||
                 this.state.benchmarks.length === 0 ||
@@ -1271,6 +1311,16 @@ export class BenchmarkLauncher extends React.Component<
               }
             >
               Start
+            </button>
+            <button
+              onClick={this.stopCurrent}
+              className={
+                'jp-mod-styled jp-mod-warn' +
+                (!this.state.isRunning ? ' jp-mod-hidden' : '')
+              }
+              disabled={!this.state.isRunning}
+            >
+              Stop
             </button>
           </div>
         </div>
@@ -1282,4 +1332,6 @@ export class BenchmarkLauncher extends React.Component<
     scenarios: {},
     benchmarks: {}
   };
+
+  private _stop: Signal<BenchmarkLauncher, void>;
 }

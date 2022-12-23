@@ -126,8 +126,14 @@ export const selfProfileBenchmark: IBenchmark<
   run: async (
     scenario: IScenario,
     options: ProfileBenchmarkOptions,
-    progress
+    progress,
+    stopSignal
   ): Promise<IProfilingOutcome> => {
+    let stop = false;
+    const stopListener = () => {
+      stop = true;
+    };
+    stopSignal?.connect(stopListener);
     const n = options.repeats || 3;
     const start = Date.now();
     if (scenario.setupSuite) {
@@ -141,7 +147,10 @@ export const selfProfileBenchmark: IBenchmark<
         sampleInterval: options.sampleInterval
       },
       options.scale,
-      i => progress?.emit({ percentage: (100 * (i + 1)) / n }),
+      i => {
+        progress?.emit({ percentage: (100 * (i + 1)) / n });
+        return !stop;
+      },
       n,
       true
     );
@@ -149,12 +158,13 @@ export const selfProfileBenchmark: IBenchmark<
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
-    progress?.emit({ percentage: 100 });
+    stopSignal?.disconnect(stopListener);
     return {
       results: [result],
       tags: reportTagCounts(),
       totalTime: Date.now() - start,
-      type: 'profile'
+      type: 'profile',
+      interrupted: stop
     };
   },
   isAvailable: () => typeof window.Profiler !== 'undefined',

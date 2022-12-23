@@ -1,5 +1,5 @@
 import { JSONSchema7 } from 'json-schema';
-import type { Signal } from '@lumino/signaling';
+import type { Signal, ISignal } from '@lumino/signaling';
 import { Statistic } from './statistics';
 import { reportTagCounts } from './utils';
 import { layoutReady } from './dramaturg';
@@ -24,6 +24,8 @@ export interface IScenario {
 
 export interface IProgress {
   percentage: number;
+  interrupted?: boolean;
+  errored?: boolean;
 }
 
 export interface IBenchmark<T extends IOutcomeBase = IOutcomeBase> {
@@ -43,7 +45,8 @@ export interface IBenchmark<T extends IOutcomeBase = IOutcomeBase> {
   run: (
     scenario: IScenario,
     options: any,
-    progress?: Signal<any, IProgress>
+    progress?: Signal<any, IProgress>,
+    stopSignal?: ISignal<any, void>
   ) => Promise<T>;
   /**
    * Configuration schema for rendering by rjsf.
@@ -95,6 +98,7 @@ export interface IOutcomeBase<T extends IMeasurement = IMeasurement> {
   tags: Record<string, number>;
   totalTime: number;
   type: string;
+  interrupted: boolean;
 }
 
 export interface ITimingOutcome<T extends ITimeMeasurement = ITimeMeasurement>
@@ -115,7 +119,7 @@ export async function profile(
   scenario: IScenario,
   options: ProfilerInitOptions,
   mode: 'micro' | 'macro',
-  afterMicroStep: (step: number) => void,
+  afterMicroStep: (step: number) => boolean,
   n = 3,
   inSuite = false
 ): Promise<IProfileMeasurement> {
@@ -147,7 +151,10 @@ export async function profile(
       if (scenario.cleanup) {
         await scenario.cleanup();
       }
-      afterMicroStep(i);
+      const shouldContinue = afterMicroStep(i);
+      if (!shouldContinue) {
+        break;
+      }
     }
   } else {
     profiler = new window.Profiler(options);
@@ -194,7 +201,7 @@ export async function benchmark(
   scenario: IScenario,
   n = 3,
   inSuite = false,
-  afterStep?: (step: number) => void
+  afterStep?: (step: number) => boolean
 ): Promise<ITimeMeasurement> {
   if (!inSuite && scenario.setupSuite) {
     await scenario.setupSuite();
@@ -218,7 +225,10 @@ export async function benchmark(
       await scenario.cleanup();
     }
     if (afterStep) {
-      afterStep(i);
+      const shouldContinue = afterStep(i);
+      if (!shouldContinue) {
+        break;
+      }
     }
   }
   if (!inSuite && scenario.cleanupSuite) {
@@ -237,28 +247,36 @@ export const executionTimeBenchmark: IBenchmark<ITimingOutcome> = {
   run: async (
     scenario: IScenario,
     options: ExecutionTimeBenchmarkOptions,
-    progress
+    progress,
+    stopSignal
   ): Promise<ITimingOutcome> => {
+    let stop = false;
+    const stopListener = () => {
+      stop = true;
+    };
+    stopSignal?.connect(stopListener);
     const n = options.repeats || 3;
     const start = Date.now();
     if (scenario.setupSuite) {
       await scenario.setupSuite();
     }
     await layoutReady();
-    const reference = await benchmark(scenario, n, true, i =>
-      progress?.emit({ percentage: (100 * (i + 1)) / n })
-    );
+    const reference = await benchmark(scenario, n, true, i => {
+      progress?.emit({ percentage: (100 * (i + 1)) / n });
+      return !stop;
+    });
     await layoutReady();
     if (scenario.cleanupSuite) {
       await scenario.cleanupSuite();
     }
-    progress?.emit({ percentage: 100 });
+    stopSignal?.disconnect(stopListener);
     return {
       reference: reference.times,
       results: [reference],
       tags: reportTagCounts(),
       totalTime: Date.now() - start,
-      type: 'time'
+      type: 'time',
+      interrupted: stop
     };
   },
   render: renderTimings
