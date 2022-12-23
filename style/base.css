@@ -43,6 +43,12 @@
   flex-grow: 1;
 }
 
+.up-BenchmarkLauncher-forms .array-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .up-BenchmarkLauncher .array-item button {
   margin: 2px;
 }

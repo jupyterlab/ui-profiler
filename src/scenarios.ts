@@ -398,17 +398,12 @@ export class SwitchTabScenario implements IScenario {
     this._widgets = [];
     for (const tab of this._tabs) {
       let widget: MainAreaWidget;
-      switch (tab.type) {
-        case 'launcher':
-          widget = await this.jupyterApp.commands.execute('launcher:create');
-          break;
-        case 'file':
-          widget = await this.jupyterApp.commands.execute('docmanager:open', {
-            path: tab.path
-          });
-          break;
-        default:
-          throw Error('Unknown tab type');
+      if (tab.path) {
+        widget = await this.jupyterApp.commands.execute('docmanager:open', {
+          path: tab.path
+        });
+      } else {
+        widget = await this.jupyterApp.commands.execute('launcher:create');
       }
       await page.waitForSelector('#' + widget.id, { state: 'attached' });
       if (

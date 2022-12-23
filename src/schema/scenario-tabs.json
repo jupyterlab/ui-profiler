@@ -5,44 +5,16 @@
     "tab": {
       "description": "Tab to open",
       "type": "object",
-      "default": {
-        "type": "launcher"
-      },
-      "anyOf": [
-        {
-          "type": "object",
-          "title": "File",
-          "properties": {
-            "path": {
-              "title": "Path",
-              "description": "Path to the file/notebook to open as a tab",
-              "type": "string"
-            },
-            "type": {
-              "title": "Type",
-              "description": "Type of the tab",
-              "type": "string",
-              "enum": ["file"],
-              "default": "file"
-            }
-          },
-          "required": ["type"]
-        },
-        {
-          "type": "object",
-          "title": "Launcher",
-          "properties": {
-            "type": {
-              "title": "Type",
-              "description": "Type of the tab",
-              "type": "string",
-              "enum": ["launcher"],
-              "default": "launcher"
-            }
-          },
-          "required": ["type"]
+      "properties": {
+        "path": {
+          "title": "Path",
+          "description": "Location of file/notebook to open. If empty opens a new launcher.",
+          "type": "string"
         }
-      ]
+      },
+      "default": {
+        "path": ""
+      }
     }
   },
   "properties": {
@@ -53,7 +25,7 @@
       "items": {
         "$ref": "#/definitions/tab"
       },
-      "default": [{ "type": "launcher" }, { "type": "launcher" }]
+      "default": [{ "path": "" }, { "path": "" }]
     }
   },
   "required": ["tabs"]
