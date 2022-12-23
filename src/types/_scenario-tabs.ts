@@ -6,21 +6,9 @@
  */
 
 /**
- * Tab to open
- */
-export type Tab = File | Launcher;
-/**
- * Path to the file/notebook to open as a tab
+ * Location of file/notebook to open. If empty opens a new launcher.
  */
 export type Path = string;
-/**
- * Type of the tab
- */
-export type Type = 'file';
-/**
- * Type of the tab
- */
-export type Type1 = 'launcher';
 /**
  * Series of two or more tabs
  */
@@ -30,12 +18,10 @@ export interface TabScenarioOptions {
   tabs: ListOfTabsToUseInScenario;
   [k: string]: any;
 }
-export interface File {
+/**
+ * Tab to open
+ */
+export interface Tab {
   path?: Path;
-  type: Type;
-  [k: string]: any;
-}
-export interface Launcher {
-  type: Type1;
   [k: string]: any;
 }
