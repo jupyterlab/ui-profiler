@@ -4,7 +4,7 @@ from ._version import __version__
 def _jupyter_labextension_paths():
     return [{
         "src": "labextension",
-        "dest": "@jupyterlab-benchmarks/ui-profiler"
+        "dest": "@jupyterlab/ui-profiler"
     }]
 
 
@@ -30,7 +30,7 @@ def _load_jupyter_server_extension(server_app):
       # Allow self-profiling in Chrome.
       "Document-Policy": "js-profiling"
     })
-    name = "@jupyterlab-benchmarks/ui-profiler"
+    name = "@jupyterlab/ui-profiler"
     server_app.log.info(f"Registered {name} server extension")
 
 

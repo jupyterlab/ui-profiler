@@ -1,5 +1,5 @@
 {
-    "name": "@jupyterlab-benchmarks/ui-profiler",
+    "name": "@jupyterlab/ui-profiler",
     "version": "0.1.4",
     "description": "JupyterLab extension for profiling UI performance",
     "keywords": [

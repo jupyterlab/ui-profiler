@@ -41,10 +41,10 @@ namespace CommandIDs {
 }
 
 /**
- * Initialization data for the @jupyterlab-benchmarks/ui-profiler extension.
+ * Initialization data for the @jupyterlab/ui-profiler extension.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab-benchmarks/ui-profiler:plugin',
+  id: '@jupyterlab/ui-profiler:plugin',
   autoStart: true,
   requires: [IFileBrowserFactory],
   optional: [ILauncher, ILayoutRestorer],

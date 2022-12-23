@@ -482,7 +482,8 @@ export function renderProfile(props: {
           typeof timing.resource === 'undefined' && timing.name === 'Profiler';
         const isOurProfilerCode =
           timing.resource &&
-          timing.resource.includes('@jupyterlab-benchmarks/ui-profiler');
+          (timing.resource.includes('@jupyterlab-benchmarks/ui-profiler') ||
+            timing.resource.includes('@jupyterlab/ui-profiler'));
         return !isNativeProfilerCall && !isOurProfilerCode;
       }
     );
