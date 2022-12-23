@@ -229,6 +229,22 @@
   border-color: var(--jp-accent-color1);
 }
 
+.up-mod-interrupted .jp-Statusbar-ProgressBar-progress-bar > div {
+  background: var(--jp-warn-color2);
+}
+
+.up-mod-interrupted .jp-Statusbar-ProgressBar-progress-bar {
+  border-color: var(--jp-warn-color1);
+}
+
+.up-mod-errored .jp-Statusbar-ProgressBar-progress-bar > div {
+  background: var(--jp-error-color2);
+}
+
+.up-mod-errored .jp-Statusbar-ProgressBar-progress-bar {
+  border-color: var(--jp-error-color1);
+}
+
 .up-BenchmarkMonitor-content.up-mod-waiting {
   display: none;
 }
@@ -322,6 +338,10 @@
 .up-BenchmarkLauncher-launchbar-buttons {
   display: flex;
   flex-direction: column;
+}
+
+.up-BenchmarkLauncher-launchbar-buttons .jp-mod-hidden {
+  display: none;
 }
 
 .up-BenchmarkMonitor,
