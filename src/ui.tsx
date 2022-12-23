@@ -764,7 +764,8 @@ function timingSummary(timing: ITimingOutcome): JSX.Element {
     <>
       <div
         title={
-          timing.reference.sort().map(Statistic.round).join(' ms\n') + ' ms'
+          [...timing.reference].sort().map(Statistic.round).join(' ms\n') +
+          ' ms'
         }
       >
         Reference: IQM:{' '}
