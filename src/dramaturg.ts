@@ -48,8 +48,17 @@ async function waitElementHidden(selector: string, within?: Element) {
 
 function waitForElement(selector: string, within?: Element): Promise<Element> {
   return new Promise(resolve => {
+    const root = within || document.documentElement;
+    const attributes = selector.includes('[') || selector.includes(':');
     const observer = new MutationObserver(mutations => {
       for (const mutation of mutations) {
+        if (attributes && mutation.attributeName) {
+          const match = root.querySelector(selector);
+          if (match) {
+            resolve(match);
+            observer.disconnect();
+          }
+        }
         for (const node of mutation.addedNodes) {
           if (!(node instanceof HTMLElement)) {
             continue;
@@ -67,10 +76,10 @@ function waitForElement(selector: string, within?: Element): Promise<Element> {
       }
     });
 
-    observer.observe(within || document.documentElement, {
+    observer.observe(root, {
       childList: true,
       subtree: true,
-      attributes: selector.includes('[') || selector.includes(':')
+      attributes: attributes
     });
 
     const node = document.querySelector(selector);
