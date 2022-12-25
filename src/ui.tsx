@@ -725,6 +725,7 @@ export class BenchmarkHistory extends React.Component<
             ? 'up-BenchmarkHistory-file up-BenchmarkHistory-file-active'
             : 'up-BenchmarkHistory-file'
         }
+        key={file.name}
         onClick={() => {
           this.props.onSelect(file);
           this.setState({

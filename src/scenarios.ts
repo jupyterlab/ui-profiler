@@ -240,7 +240,20 @@ export class CompleterScenario
       tokens.push('t');
       text = tokens.join('\n');
     }
-    await insertText(this.jupyterApp, text);
+    if (this.useNotebook && this.options.setup.setupCell) {
+      await insertText(this.jupyterApp, this.options.setup.setupCell);
+      await page.waitForSelector(
+        '.jp-Notebook-ExecutionIndicator[data-status="idle"]',
+        { state: 'attached' }
+      );
+      await this.jupyterApp.commands.execute(
+        'notebook:run-cell-and-insert-below'
+      );
+      await insertText(this.jupyterApp, text);
+      await this.jupyterApp.commands.execute('notebook:enter-edit-mode');
+    } else {
+      await insertText(this.jupyterApp, text);
+    }
 
     if (!this.useNotebook) {
       // Scroll down a little bit to avoid out of view bug
@@ -268,8 +281,16 @@ export class CompleterScenario
     if (this.useNotebook) {
       // TODO enter a specific cell, not the first cell?
       const handle = new ElementHandle(this.widget!.node);
-      const editor = await handle.$('.jp-Editor textarea');
-      await editor!.focus();
+      const editorSelector = document.querySelector('.cm-content')
+        ? '.cm-content'
+        : 'textarea';
+      const editor = this.options!.setup.setupCell
+        ? await handle.$(`.jp-Cell:nth-child(2) .jp-Editor ${editorSelector}`)
+        : await handle.$(`.jp-Editor ${editorSelector}`);
+      if (!editor) {
+        throw Error('Setup failed: cell editor could not be located');
+      }
+      await editor.focus();
     }
     await layoutReady();
     await page.press('Tab');
