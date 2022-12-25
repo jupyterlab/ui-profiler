@@ -30,7 +30,11 @@ export type TokenSize = number;
 /**
  * Text to enter into the editor. Last line should include a partial token on which the completion will be riggered.
  */
-export type Path = string;
+export type TriggerCode = string;
+/**
+ * Code to run prior to invoking completer, e.g. `import numpy as np`. Only has an effect in notebook.
+ */
+export type CodeToRunNotebookOnly = string;
 
 export interface CompleterScenarioOptions {
   editor: EditorType;
@@ -43,6 +47,7 @@ export interface AutoGenerateTokensToComplete {
   [k: string]: any;
 }
 export interface IWillProvideACustomText {
-  setupText: Path;
+  setupText: TriggerCode;
+  setupCell?: CodeToRunNotebookOnly;
   [k: string]: any;
 }

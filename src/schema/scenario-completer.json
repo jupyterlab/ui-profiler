@@ -49,13 +49,19 @@
           "title": "I will provide a custom text",
           "properties": {
             "setupText": {
-              "title": "Path",
+              "title": "Trigger code",
               "description": "Text to enter into the editor. Last line should include a partial token on which the completion will be riggered.",
               "type": "string",
-              "default": ""
+              "default": "np."
+            },
+            "setupCell": {
+              "title": "Code to run (notebook only)",
+              "description": "Code to run prior to invoking completer, e.g. `import numpy as np`. Only has an effect in notebook.",
+              "type": "string",
+              "default": "import numpy as np"
             }
           },
-          "required": ["setupText"]
+          "required": ["setupText", "triggerCell"]
         }
       ]
     }
