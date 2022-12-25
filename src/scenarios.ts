@@ -244,8 +244,12 @@ export class CompleterScenario
 
     if (!this.useNotebook) {
       // Scroll down a little bit to avoid out of view bug
-      this.editor!.querySelector('.CodeMirror-scroll')!.scrollBy({
-        top: 500,
+      // `.CodeMirror-scroll` is CM5, `.cm-scroller` is CM6
+      const scrollArea =
+        this.editor!.querySelector('.CodeMirror-scroll')! ||
+        this.editor!.querySelector('.cm-scroller')!;
+      scrollArea.scrollBy({
+        top: 20 * this.options.setup.tokenCount,
         left: 0,
         behavior: 'smooth'
       });
@@ -276,8 +280,12 @@ export class CompleterScenario
     // need to query for a completer with programatically set styles (which are
     // things like position (top/left/width/height) which are only present in the
     // active completer
-    await page.waitForSelector('.jp-Completer[style]', { state: 'attached' });
-    await page.waitForSelector('.jp-Completer[style]', { state: 'visible' });
+    await page.waitForSelector('.jp-Completer.jp-HoverBox[style]', {
+      state: 'attached'
+    });
+    await page.waitForSelector('.jp-Completer.jp-HoverBox[style]', {
+      state: 'visible'
+    });
     await layoutReady();
   }
 
