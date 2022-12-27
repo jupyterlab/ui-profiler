@@ -242,7 +242,7 @@ export class CompleterScenario
     }
     if (this.useNotebook && this.options.setup.setupCell) {
       await insertText(this.jupyterApp, this.options.setup.setupCell);
-      await page.waitForSelector(
+      await new ElementHandle(this.widget.node).waitForSelector(
         '.jp-Notebook-ExecutionIndicator[data-status="idle"]',
         { state: 'attached' }
       );
