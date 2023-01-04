@@ -1,0 +1,30 @@
+{
+  "title": "Debugger Scenario Options",
+  "type": "object",
+  "properties": {
+    "codeCells": {
+      "title": "Code to execute",
+      "description": "Python code cells to execute one-by-one to populate the debugger namespace, e.g. `from numpy import *`",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "[globals().__setitem__(f'x{i}', 'y') for i in range(1000)];",
+        "z = 1"
+      ]
+    },
+    "expectedNumberOfVariables": {
+      "title": "Expected number of variables",
+      "description": "The scenario waits until debugger panel is populated with at least as many variables as specified. For accurate timings should have as many members as there are code cells.",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "min": 0
+      },
+      "default": [1000, 1001]
+    }
+  },
+  "required": ["codeCells", "expectedNumberOfVariables"],
+  "additionalProperties": false
+}

@@ -3,6 +3,25 @@
  */
 import { getKeyboardLayout } from '@lumino/keyboard';
 
+export async function waitUntilDisappears(selector: string) {
+  return new Promise<void>((accept, reject) => {
+    const timeout = 5 * 1000;
+    const step = 50;
+    let total = 0;
+    const id = setInterval(() => {
+      const match = document.querySelector(selector);
+      if (!match) {
+        clearInterval(id);
+        return accept();
+      } else if (total > timeout) {
+        clearInterval(id);
+        return reject(`${selector} did not disappear in ${timeout}ms`);
+      }
+      total += step;
+    }, step);
+  });
+}
+
 function waitElementVisible(
   selector: string,
   within?: Element,
@@ -283,7 +302,9 @@ async function click(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   const initDict = {
     clientX: rect.x + rect.width / 2,
-    clientY: rect.x + rect.height / 2
+    clientY: rect.x + rect.height / 2,
+    // bubbles required for React.js
+    bubbles: true
   };
   element.dispatchEvent(new MouseEvent('mousedown', initDict));
   element.dispatchEvent(new MouseEvent('mouseup', initDict));

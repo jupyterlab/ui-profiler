@@ -7,7 +7,8 @@ import {
   page,
   layoutReady,
   ElementHandle,
-  waitForScrollEnd
+  waitForScrollEnd,
+  waitUntilDisappears
 } from './dramaturg';
 import { IScenario } from './benchmark';
 
@@ -17,11 +18,13 @@ import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
 import type { CompleterScenarioOptions } from './types/_scenario-completer';
 import type { SidebarsScenarioOptions } from './types/_scenario-sidebars';
 import type { ScrollScenarioOptions } from './types/_scenario-scroll';
+import type { DebuggerScenarioOptions } from './types/_scenario-debugger';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
 import scenarioMenuOpenOptionsSchema from './schema/scenario-menu-open.json';
 import scenarioTabOptionsSchema from './schema/scenario-tabs.json';
 import scenarioCompleterOptionsSchema from './schema/scenario-completer.json';
+import scenarioDebuggerOptionsSchema from './schema/scenario-debugger.json';
 import scenarioSidebarsSchema from './schema/scenario-sidebars.json';
 import scenarioScrollSchema from './schema/scenario-scroll.json';
 
@@ -142,8 +145,16 @@ export function insertText(
   });
 }
 
+interface IExtendedDebuggerScenarioOptions extends DebuggerScenarioOptions {
+  editor: 'Notebook';
+  path: null;
+}
+
 class SingleEditorScenario<
-  T extends CompleterScenarioOptions | ScrollScenarioOptions
+  T extends
+    | CompleterScenarioOptions
+    | ScrollScenarioOptions
+    | IExtendedDebuggerScenarioOptions
 > {
   constructor(protected jupyterApp: JupyterFrontEnd) {
     // no-op
@@ -242,10 +253,7 @@ export class CompleterScenario
     }
     if (this.useNotebook && this.options.setup.setupCell) {
       await insertText(this.jupyterApp, this.options.setup.setupCell);
-      await page.waitForSelector(
-        '.jp-Notebook-ExecutionIndicator[data-status="idle"]',
-        { state: 'attached' }
-      );
+      await waitForKernelStatus(this.widget.node, 'idle');
       await this.jupyterApp.commands.execute(
         'notebook:run-cell-and-insert-below'
       );
@@ -316,6 +324,125 @@ export class CompleterScenario
     await page.waitForSelector('.jp-Completer[style]', { state: 'hidden' });
     await layoutReady();
   }
+}
+
+export class DebuggerScenario
+  extends SingleEditorScenario<IExtendedDebuggerScenarioOptions>
+  implements IScenario
+{
+  id = 'debugger';
+  name = 'Debugger';
+  configSchema = scenarioDebuggerOptionsSchema as any as JSONSchema7;
+
+  setOptions(options: DebuggerScenarioOptions): void {
+    super.setOptions({
+      ...options,
+      editor: 'Notebook',
+      path: null
+    });
+  }
+
+  private async _goToTop() {
+    if (!this.options) {
+      throw new Error('Setup failure');
+    }
+    for (let i = 0; i < this.options.codeCells.length + 1; i++) {
+      await this.jupyterApp.commands.execute('notebook:move-cursor-up');
+    }
+  }
+
+  async setupSuite(): Promise<void> {
+    await super.setupSuite();
+    if (!this.widget || !this.options) {
+      throw new Error('Parent setup failure');
+    }
+
+    for (const codeCell of this.options.codeCells) {
+      await insertText(this.jupyterApp, codeCell);
+      await this.jupyterApp.commands.execute('notebook:insert-cell-below');
+      await layoutReady();
+      await layoutReady();
+      await this.jupyterApp.commands.execute('notebook:enter-edit-mode');
+      await layoutReady();
+      await layoutReady();
+    }
+    await insertText(this.jupyterApp, '%reset -f');
+    await this._goToTop();
+
+    await waitForKernelStatus(this.widget.node, 'idle');
+    const handle = new ElementHandle(this.widget.node);
+    const bugIcon = await handle.waitForSelector(
+      'button[aria-disabled="false"][title="Enable Debugger"]',
+      {
+        state: 'attached'
+      }
+    );
+    await bugIcon.click();
+    await page.waitForSelector(`#${CSS.escape('jp-debugger-sidebar')}`, {
+      state: 'visible'
+    });
+    await handle.waitForSelector(
+      'button[aria-disabled="false"][title="Disable Debugger"]',
+      {
+        state: 'attached'
+      }
+    );
+    await layoutReady();
+
+    await page.waitForSelector('.jp-DebuggerVariables-body', {
+      state: 'attached'
+    });
+    await page.waitForSelector('.jp-DebuggerVariables-body', {
+      state: 'visible'
+    });
+  }
+
+  async run(): Promise<void> {
+    if (!this.widget || !this.options) {
+      throw new Error('Setup failure');
+    }
+
+    for (let i = 0; i < this.options.codeCells.length; i++) {
+      await this.jupyterApp.commands.execute(
+        'notebook:run-cell-and-select-next'
+      );
+      await waitForKernelStatus(this.widget.node, 'idle');
+      const expectedCount = this.options.expectedNumberOfVariables[i];
+      if (typeof expectedCount !== 'undefined') {
+        await page.waitForSelector(
+          `.jp-DebuggerVariables-body li:nth-child(${expectedCount + 2})`,
+          {
+            state: 'attached'
+          }
+        );
+      }
+      await layoutReady();
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    if (!this.widget || !this.options) {
+      throw new Error('Setup failure');
+    }
+    // execute `%reset -f` cell
+    await layoutReady();
+    const minExpected = Math.min(...this.options.expectedNumberOfVariables);
+    await this.jupyterApp.commands.execute('notebook:run-cell-and-select-next');
+    // first two are "special variables" and "function variables"
+    await waitForKernelStatus(this.widget.node, 'idle');
+    await waitUntilDisappears(
+      `.jp-DebuggerVariables-body li:nth-child(${minExpected})`
+    );
+    await this._goToTop();
+    await layoutReady();
+  }
+}
+
+async function waitForKernelStatus(notebookPanel: HTMLElement, status: string) {
+  await new ElementHandle(notebookPanel).waitForSelector(
+    `.jp-Notebook-ExecutionIndicator[data-status="${status}"]`,
+    { state: 'attached' }
+  );
 }
 
 async function activateTabWidget(
