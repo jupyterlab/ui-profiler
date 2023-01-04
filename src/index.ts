@@ -25,7 +25,8 @@ import {
   SwitchTabFocusScenario,
   SidebarOpenScenario,
   CompleterScenario,
-  ScrollScenario
+  ScrollScenario,
+  DebuggerScenario
 } from './scenarios';
 import {
   executionTimeBenchmark,
@@ -70,7 +71,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
         new SwitchTabFocusScenario(app),
         new SidebarOpenScenario(app),
         new CompleterScenario(app),
-        new ScrollScenario(app)
+        new ScrollScenario(app),
+        new DebuggerScenario(app)
       ],
       translator: nullTranslator,
       upload: (file: File) => {
