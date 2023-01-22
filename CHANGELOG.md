@@ -2,6 +2,31 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.6
+
+([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.1.5...7949566d5055a9a0ed1fdc6f607cecc803a92f3c))
+
+### New features added
+
+- Debugger scenario [#25](https://github.com/jupyterlab/ui-profiler/pull/25) ([@krassowski](https://github.com/krassowski))
+
+### Bugs fixed
+
+- Fix report upload when in a sub-directory [#29](https://github.com/jupyterlab/ui-profiler/pull/29) ([@krassowski](https://github.com/krassowski))
+
+### Maintenance and upkeep improvements
+
+- Bump json5 from 2.2.1 to 2.2.3 in /ui-tests [#27](https://github.com/jupyterlab/ui-profiler/pull/27) ([@dependabot](https://github.com/dependabot))
+- Bump json5 from 1.0.1 to 1.0.2 [#26](https://github.com/jupyterlab/ui-profiler/pull/26) ([@dependabot](https://github.com/dependabot))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2022-12-28&to=2023-01-22&type=c))
+
+[@dependabot](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Adependabot+updated%3A2022-12-28..2023-01-22&type=Issues) | [@github-actions](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Agithub-actions+updated%3A2022-12-28..2023-01-22&type=Issues) | [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2022-12-28..2023-01-22&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.5
 
 **Please uninstall the old version before upgrading.** This is necessary because with this release the extension was moved to `@jupyterlab` namespace.
@@ -34,8 +59,6 @@
 ([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2022-12-18&to=2022-12-28&type=c))
 
 [@github-actions](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Agithub-actions+updated%3A2022-12-18..2022-12-28&type=Issues) | [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2022-12-18..2022-12-28&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.4
 
