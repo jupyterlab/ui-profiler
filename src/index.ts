@@ -5,7 +5,8 @@ import {
 } from '@jupyterlab/application';
 import { MainAreaWidget, WidgetTracker } from '@jupyterlab/apputils';
 import { PageConfig } from '@jupyterlab/coreutils';
-import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
+import { IDocumentManager } from '@jupyterlab/docmanager';
+import { FileBrowserModel } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import { nullTranslator } from '@jupyterlab/translation';
 import { offlineBoltIcon } from '@jupyterlab/ui-components';
@@ -47,14 +48,17 @@ namespace CommandIDs {
 const plugin: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/ui-profiler:plugin',
   autoStart: true,
-  requires: [IFileBrowserFactory],
+  requires: [IDocumentManager],
   optional: [ILauncher, ILayoutRestorer],
   activate: (
     app: JupyterFrontEnd,
-    factory: IFileBrowserFactory,
+    docManager: IDocumentManager,
     launcher: ILauncher | null,
     restorer: ILayoutRestorer | null
   ) => {
+    const fileBrowserModel = new FileBrowserModel({
+      manager: docManager
+    });
     const options = {
       benchmarks: [
         executionTimeBenchmark,
@@ -76,11 +80,8 @@ const plugin: JupyterFrontEndPlugin<void> = {
       ],
       translator: nullTranslator,
       upload: (file: File) => {
-        // this.manager = new ServiceManager();
-        // this.manager.contents.uploadFile - only exists in galata...
-        // TODO: this is actually an upstream issue, services should offer upload method
-        // rather than each place re-implmenting it
-        return factory.defaultBrowser.model.upload(file);
+        // https://github.com/jupyterlab/jupyterlab/issues/11416
+        return fileBrowserModel.upload(file);
       },
       getJupyterState: () => {
         const state: IJupyterState = {
