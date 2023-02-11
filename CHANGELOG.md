@@ -2,6 +2,26 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.1.7
+
+([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.1.6...eac70e739f420197f6ae0049d93602ce6ac8a1eb))
+
+### Enhancements made
+
+- Allow to add scenarios programmatically [#31](https://github.com/jupyterlab/ui-profiler/pull/31) ([@krassowski](https://github.com/krassowski))
+
+### Maintenance and upkeep improvements
+
+- Update package locks to lab 3.6 versions [#32](https://github.com/jupyterlab/ui-profiler/pull/32) ([@krassowski](https://github.com/krassowski))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-01-22&to=2023-02-11&type=c))
+
+[@github-actions](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Agithub-actions+updated%3A2023-01-22..2023-02-11&type=Issues) | [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-01-22..2023-02-11&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.6
 
 ([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.1.5...7949566d5055a9a0ed1fdc6f607cecc803a92f3c))
@@ -24,8 +44,6 @@
 ([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2022-12-28&to=2023-01-22&type=c))
 
 [@dependabot](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Adependabot+updated%3A2022-12-28..2023-01-22&type=Issues) | [@github-actions](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Agithub-actions+updated%3A2022-12-28..2023-01-22&type=Issues) | [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2022-12-28..2023-01-22&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.5
 
