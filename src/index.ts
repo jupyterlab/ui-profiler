@@ -20,22 +20,14 @@ import {
 } from './styleBenchmarks';
 import { selfProfileBenchmark } from './jsBenchmarks';
 import {
-  MenuOpenScenario,
-  MenuSwitchScenario,
-  SwitchTabScenario,
-  SwitchTabFocusScenario,
-  SidebarOpenScenario,
-  CompleterScenario,
-  ScrollScenario,
-  DebuggerScenario
-} from './scenarios';
-import {
   executionTimeBenchmark,
   IBenchmark,
   ITimingOutcome,
   IProfilingOutcome
 } from './benchmark';
 import { IJupyterState } from './utils';
+import { IScenario, IUIProfiler } from './tokens';
+import { plugin as scenariosPlugin } from './scenarios';
 
 namespace CommandIDs {
   // export const findUnusedStyles = 'ui-profiler:find-unused-styles';
@@ -45,11 +37,12 @@ namespace CommandIDs {
 /**
  * Initialization data for the @jupyterlab/ui-profiler extension.
  */
-const plugin: JupyterFrontEndPlugin<void> = {
+const plugin: JupyterFrontEndPlugin<IUIProfiler> = {
   id: '@jupyterlab/ui-profiler:plugin',
   autoStart: true,
   requires: [IDocumentManager],
   optional: [ILauncher, ILayoutRestorer],
+  provides: IUIProfiler,
   activate: (
     app: JupyterFrontEnd,
     docManager: IDocumentManager,
@@ -59,6 +52,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
     const fileBrowserModel = new FileBrowserModel({
       manager: docManager
     });
+    const scenarios: IScenario[] = [];
     const options = {
       benchmarks: [
         executionTimeBenchmark,
@@ -68,16 +62,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         styleRuleUsageBenchmark,
         selfProfileBenchmark
       ] as (IBenchmark<ITimingOutcome<any>> | IBenchmark<IProfilingOutcome>)[],
-      scenarios: [
-        new MenuOpenScenario(app),
-        new MenuSwitchScenario(app),
-        new SwitchTabScenario(app),
-        new SwitchTabFocusScenario(app),
-        new SidebarOpenScenario(app),
-        new CompleterScenario(app),
-        new ScrollScenario(app),
-        new DebuggerScenario(app)
-      ],
+      scenarios: scenarios,
       translator: nullTranslator,
       upload: (file: File) => {
         // https://github.com/jupyterlab/jupyterlab/issues/11416
@@ -156,7 +141,18 @@ const plugin: JupyterFrontEndPlugin<void> = {
         rank: 1
       });
     }
+
+    return {
+      addScenario: (scenario: IScenario) => {
+        scenarios.push(scenario);
+        if (lastWidget) {
+          lastWidget.content.addScenario(scenario);
+        }
+      }
+    };
   }
 };
 
-export default plugin;
+export * from './tokens';
+
+export default [plugin, scenariosPlugin];

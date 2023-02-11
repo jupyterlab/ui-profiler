@@ -2,7 +2,6 @@ import { JSONSchema7 } from 'json-schema';
 import React from 'react';
 
 import {
-  IScenario,
   ITimeMeasurement,
   ITimingOutcome,
   IBenchmark,
@@ -17,6 +16,7 @@ import {
   collectRules
 } from './css';
 import { renderBlockResult } from './ui';
+import { IScenario } from './tokens';
 
 import benchmarkOptionsSchema from './schema/benchmark-base.json';
 import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';

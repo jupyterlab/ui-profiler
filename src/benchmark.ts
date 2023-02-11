@@ -6,21 +6,7 @@ import { layoutReady } from './dramaturg';
 import benchmarkExecutionOptionsSchema from './schema/benchmark-execution.json';
 import type { ExecutionTimeBenchmarkOptions } from './types/_benchmark-execution';
 import { renderTimings } from './ui';
-
-export interface IScenario {
-  id: string;
-  name: string;
-  run: () => Promise<void>;
-
-  setupSuite?: () => Promise<void>;
-  cleanupSuite?: () => Promise<void>;
-
-  setup?: () => Promise<void>;
-  cleanup?: () => Promise<void>;
-
-  configSchema: JSONSchema7;
-  setOptions: (options: any) => void;
-}
+import { IScenario } from './tokens';
 
 export interface IProgress {
   percentage: number;

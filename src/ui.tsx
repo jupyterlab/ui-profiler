@@ -12,7 +12,6 @@ import {
   IBenchmark,
   IOutcome,
   ITimeMeasurement,
-  IScenario,
   IProgress,
   ITimingOutcome,
   IProfilingOutcome
@@ -28,6 +27,7 @@ import {
 import { Statistic } from './statistics';
 import { TimingTable, ResultTable } from './table';
 import { LuminoWidget } from './lumino';
+import { IScenario, IUIProfiler } from './tokens';
 
 interface IProfilerProps {
   benchmarks: (IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>)[];
@@ -604,7 +604,7 @@ export function renderBlockResult(props: {
   );
 }
 
-export class UIProfiler extends ReactWidget {
+export class UIProfiler extends ReactWidget implements IUIProfiler {
   constructor(private props: IProfilerProps) {
     super();
     this.progress = new Signal(this);
@@ -625,6 +625,11 @@ export class UIProfiler extends ReactWidget {
   async loadResult(file: Contents.IModel): Promise<void> {
     file = await this.manager.contents.get(file.path);
     this.handleResult(JSON.parse(file.content));
+  }
+
+  addScenario(scenario: IScenario) {
+    this.props.scenarios.push(scenario);
+    this.update();
   }
 
   render<T extends IProfilingOutcome | ITimingOutcome>(): JSX.Element {
@@ -1038,8 +1043,8 @@ export class BenchmarkLauncher extends React.Component<
     super(props);
     this._stop = new Signal(this);
     this.state = {
-      benchmarks: [props.benchmarks[0]],
-      scenarios: [props.scenarios[0]],
+      benchmarks: props.benchmarks.length !== 0 ? [props.benchmarks[0]] : [],
+      scenarios: props.scenarios.length !== 0 ? [props.scenarios[0]] : [],
       fieldTemplate: CustomTemplateFactory(this.props.translator),
       arrayFieldTemplate: CustomArrayTemplateFactory(this.props.translator),
       objectFieldTemplate: CustomObjectTemplateFactory(this.props.translator),
@@ -1059,7 +1064,9 @@ export class BenchmarkLauncher extends React.Component<
       scenario: config.scenarios[scenario.id],
       benchmark: config.benchmarks[benchmark.id]
     } as any);
-    scenario.setOptions(options.scenario);
+    if (scenario.setOptions) {
+      scenario.setOptions(options.scenario);
+    }
     this.props.progress.emit({ percentage: 0 });
     const result = (await benchmark.run(
       scenario,
@@ -1272,8 +1279,12 @@ export class BenchmarkLauncher extends React.Component<
             </div>
             <div className="up-BenchmarkLauncher-forms">
               {this.state.scenarios.map(scenario => {
-                const properties = scenario.configSchema.properties;
-                if (!properties || Object.keys(properties).length === 0) {
+                const properties = scenario.configSchema?.properties;
+                if (
+                  !scenario.configSchema ||
+                  !properties ||
+                  Object.keys(properties).length === 0
+                ) {
                   return <OptionsStub name={scenario.name} />;
                 }
                 scenario.configSchema.title = scenario.name + ' configuration';
