@@ -1,8 +1,10 @@
-import type { JupyterFrontEnd } from '@jupyterlab/application';
+import type {
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
+} from '@jupyterlab/application';
 import type { MainAreaWidget } from '@jupyterlab/apputils';
 
 import { JSONSchema7 } from 'json-schema';
-
 import {
   page,
   layoutReady,
@@ -10,10 +12,9 @@ import {
   waitForScrollEnd,
   waitUntilDisappears
 } from './dramaturg';
-import { IScenario } from './benchmark';
+import { IScenario, IUIProfiler } from './tokens';
 
 import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
-import type { ScenarioOptions } from './types/_scenario-base';
 import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
 import type { CompleterScenarioOptions } from './types/_scenario-completer';
 import type { SidebarsScenarioOptions } from './types/_scenario-sidebars';
@@ -50,10 +51,6 @@ async function cleanupMenu(): Promise<void> {
 
 export class MenuSwitchScenario implements IScenario {
   constructor(protected jupyterApp: JupyterFrontEnd) {
-    // no-op
-  }
-
-  setOptions(options: ScenarioOptions): void {
     // no-op
   }
 
@@ -597,3 +594,21 @@ export class SwitchTabFocusScenario extends SwitchTabScenario {
   name = 'Switch Tab Focus';
   split: 'first' | 'all' = 'all';
 }
+
+export const plugin: JupyterFrontEndPlugin<void> = {
+  id: '@jupyterlab/ui-profiler:default-scenarios',
+  autoStart: true,
+  requires: [IUIProfiler],
+  activate: (app: JupyterFrontEnd, profiler: IUIProfiler) => {
+    [
+      new MenuOpenScenario(app),
+      new MenuSwitchScenario(app),
+      new SwitchTabScenario(app),
+      new SwitchTabFocusScenario(app),
+      new SidebarOpenScenario(app),
+      new CompleterScenario(app),
+      new ScrollScenario(app),
+      new DebuggerScenario(app)
+    ].map(scenario => profiler.addScenario(scenario));
+  }
+};

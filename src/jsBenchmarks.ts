@@ -1,7 +1,6 @@
 import { JSONSchema7 } from 'json-schema';
 
 import {
-  IScenario,
   IProfilingOutcome,
   IBenchmark,
   IProfileMeasurement,
@@ -10,6 +9,7 @@ import {
 import { reportTagCounts } from './utils';
 import { layoutReady } from './dramaturg';
 import { renderProfile } from './ui';
+import { IScenario } from './tokens';
 
 import benchmarkProfileOptionsSchema from './schema/benchmark-profile.json';
 import type { ProfileBenchmarkOptions } from './types/_benchmark-profile';
