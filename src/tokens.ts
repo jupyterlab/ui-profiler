@@ -69,5 +69,5 @@ export interface IUIProfiler {
  * The UIProfiler token.
  */
 export const IUIProfiler = new Token<IUIProfiler>(
-  '@jupyterlab/ui-profiler:manager'
+  '@jupyterlab/ui-profiler:plugin'
 );
