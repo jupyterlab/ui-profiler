@@ -8,7 +8,7 @@ JupyterLab extension for profiling UI performance.
 
 ![UI Profiler UI](https://raw.githubusercontent.com/jupyterlab/ui-profiler/main/ui-tests/tests/results.spec.ts-snapshots/ui-profiler-with-boxplot-linux.png)
 
-You can find more information in our [User Guide](http://ui-profiler.readthedocs.io/en/latest/en/user_guide.html).
+You can find more information in our [User Guide](https://ui-profiler.readthedocs.io/en/latest/user_guide.html).
 
 Note: when this extension is enabled, the server will return additional headers:
 
