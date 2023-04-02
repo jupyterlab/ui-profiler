@@ -19,6 +19,12 @@ test.describe('Profiler UI', () => {
     await contents.deleteDirectory('ui-profiler-results');
   });
 
+  test.afterAll(async ({ baseURL, request }) => {
+    const contents = galata.newContentsHelper(baseURL, undefined, request);
+    // clean up results
+    await contents.deleteDirectory('ui-profiler-results');
+  });
+
   test('adds launcher card', async ({ page }) => {
     const section = page.locator('.jp-Launcher-section', {
       has: page.locator(PROFILER_CARD_SELECTOR)

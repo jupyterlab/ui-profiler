@@ -20,6 +20,9 @@ test.describe.configure({ mode: 'parallel' });
 test.describe('Results', () => {
   test.beforeAll(async ({ baseURL, request, tmpPath }) => {
     const contents = galata.newContentsHelper(baseURL, undefined, request);
+    // re-create directory to ensure there are no stale results
+    await contents.deleteDirectory('ui-profiler-results');
+    await contents.createDirectory('ui-profiler-results');
     for (const fileName of fileNames) {
       await contents.uploadFile(
         path.resolve(__dirname, `./ui-profiler-results/${fileName}`),
