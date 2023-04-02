@@ -1,67 +1,12 @@
 import { JSONSchema7 } from 'json-schema';
-import type { Signal, ISignal } from '@lumino/signaling';
 import { Statistic } from './statistics';
 import { reportTagCounts } from './utils';
 import { layoutReady } from './dramaturg';
 import benchmarkExecutionOptionsSchema from './schema/benchmark-execution.json';
 import type { ExecutionTimeBenchmarkOptions } from './types/_benchmark-execution';
 import { renderTimings } from './ui';
-import { IScenario } from './tokens';
+import { IBenchmark, IMeasurement, IScenario, IOutcomeBase } from './tokens';
 
-export interface IProgress {
-  percentage: number;
-  interrupted?: boolean;
-  errored?: boolean;
-}
-
-export interface IBenchmark<T extends IOutcomeBase = IOutcomeBase> {
-  /**
-   * Unique identifier.
-   */
-  id: string;
-  /**
-   * User-facing name of the benchmark.
-   */
-  name: string;
-  /**
-   * Function excuting the benchmark for given scenario.
-   * @param scenario - the scenario to execute.
-   * @param options - the JSON data from rjsf form generated from `configSchema`.
-   */
-  run: (
-    scenario: IScenario,
-    options: any,
-    progress?: Signal<any, IProgress>,
-    stopSignal?: ISignal<any, void>
-  ) => Promise<T>;
-  /**
-   * Configuration schema for rendering by rjsf.
-   */
-  configSchema: JSONSchema7;
-  /**
-   * Custom renderer for results.
-   */
-  render?: (props: { outcome: T }) => JSX.Element;
-  /**
-   * Checks whether the benchmark can be executed on runing browser.
-   * If not defined, the benchmark is assumed to be available.
-   */
-  isAvailable?: () => boolean;
-  /**
-   * Column to sort results by when presenting in a table.
-   */
-  sortColumn?: string;
-  /**
-   * Brief (one-two sentences) explanation how to interpret the results.
-   */
-  interpretation?: string | JSX.Element;
-}
-
-interface IMeasurement {
-  errors?: any[];
-  // allow assignments
-  [index: string]: any;
-}
 
 export interface ITimeMeasurement extends IMeasurement {
   times: number[];
@@ -77,14 +22,6 @@ export interface IProfileMeasurement extends IMeasurement {
    * Sampling interval reported by profiler.
    */
   samplingInterval: number;
-}
-
-export interface IOutcomeBase<T extends IMeasurement = IMeasurement> {
-  results: T[];
-  tags: Record<string, number>;
-  totalTime: number;
-  type: string;
-  interrupted: boolean;
 }
 
 export interface ITimingOutcome<T extends ITimeMeasurement = ITimeMeasurement>

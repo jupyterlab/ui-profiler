@@ -4,7 +4,6 @@ import React from 'react';
 import {
   ITimeMeasurement,
   ITimingOutcome,
-  IBenchmark,
   benchmark
 } from './benchmark';
 import { reportTagCounts, shuffled, iterateAffectedNodes } from './utils';
@@ -16,7 +15,7 @@ import {
   collectRules
 } from './css';
 import { renderBlockResult } from './ui';
-import { IScenario } from './tokens';
+import { IBenchmark, IScenario } from './tokens';
 
 import benchmarkOptionsSchema from './schema/benchmark-base.json';
 import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';
