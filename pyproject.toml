@@ -62,6 +62,9 @@ exclude = [".github", "binder"]
 "jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
 "jupyter-config/nb-config" = "etc/jupyter/jupyter_notebook_config.d"
 
+[tool.hatch.build.hooks.version]
+path = "jupyterlab_ui_profiler/_version.py"
+
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
