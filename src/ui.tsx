@@ -610,12 +610,26 @@ export class UIProfiler extends ReactWidget implements IUIProfiler {
     this.progress = new Signal(this);
     this.handleResult = this.handleResult.bind(this);
     this.loadResult = this.loadResult.bind(this);
+    this.upload = this.upload.bind(this);
     this.manager = new ServiceManager();
     this.resultAdded = new Signal(this);
-    this.manager.contents.save(this.props.resultLocation, {
-      type: 'directory'
-    });
+    this.ensureResultsDirectory();
   }
+
+  async ensureResultsDirectory() {
+    return this.manager.contents
+      .save(this.props.resultLocation, {
+        type: 'directory'
+      })
+      .catch(reason => {
+        showErrorMessage(
+          'filesystem error',
+          'ui-profiler could not create results directory; see console for details'
+        );
+        console.error('directory creation failure reason:', reason);
+      });
+  }
+
   handleResult(result: IBenchmarkResult): void {
     this.result = result;
     this.update();
@@ -632,6 +646,11 @@ export class UIProfiler extends ReactWidget implements IUIProfiler {
     this.update();
   }
 
+  async upload(file: File): Promise<Contents.IModel> {
+    await this.ensureResultsDirectory();
+    return this.props.upload(file);
+  }
+
   render<T extends IProfilingOutcome | ITimingOutcome>(): JSX.Element {
     return (
       <div className="up-UIProfiler">
@@ -639,6 +658,7 @@ export class UIProfiler extends ReactWidget implements IUIProfiler {
           onResult={this.handleResult}
           progress={this.progress}
           {...this.props}
+          upload={this.upload}
         />
         <BenchmarkHistory
           resultAdded={this.resultAdded}
@@ -1164,7 +1184,7 @@ export class BenchmarkLauncher extends React.Component<
           }
           const result = await this.runBenchmark(scenario, benchmark, config);
           const filename = benchmarkFilename(result);
-          this.props.upload(
+          await this.props.upload(
             new File(
               JSON.stringify(result).split('\n'),
               PathExt.join(this.props.resultLocation, filename),
