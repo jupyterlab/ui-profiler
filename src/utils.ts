@@ -1,5 +1,3 @@
-import type { DockPanel } from '@lumino/widgets';
-
 export function shuffled<T = any>(array: T[]): T[] {
   return array
     .map(value => ({ value, sort: Math.random() }))
@@ -38,13 +36,6 @@ export function formatTime(miliseconds: number): string {
   }
   formatted = Math.round(hours) + ' hours ' + formatted;
   return formatted;
-}
-
-export interface IJupyterState {
-  version: string;
-  client: string;
-  devMode: boolean;
-  mode: DockPanel.Mode;
 }
 
 /**

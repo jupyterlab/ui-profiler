@@ -1,10 +1,7 @@
 import { JSONSchema7 } from 'json-schema';
 
-import {
-  IProfilingOutcome,
-  IProfileMeasurement,
-  profile
-} from './benchmark';
+import { profile } from './benchmark';
+import { IProfilingOutcome, IProfileMeasurement } from './tokens';
 import { reportTagCounts } from './utils';
 import { layoutReady } from './dramaturg';
 import { renderProfile } from './ui';

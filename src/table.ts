@@ -8,10 +8,9 @@ import {
   BasicSelectionModel,
   SelectionModel
 } from '@lumino/datagrid';
-import { ITimeMeasurement } from './benchmark';
 import { IRuleDescription } from './css';
-
 import { Statistic } from './statistics';
+import { ITimeMeasurement } from './tokens';
 
 class MouseHandler extends BasicMouseHandler {
   get clicked(): ISignal<this, DataGrid.HitTestResult> {

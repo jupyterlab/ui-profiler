@@ -3,38 +3,20 @@ import { PageConfig } from '@jupyterlab/coreutils';
 import { JSONObject } from '@lumino/coreutils';
 import type { DockPanel } from '@lumino/widgets';
 import { ISignal, Signal } from '@lumino/signaling';
+import {} from './utils';
 import {
+  IBenchmarkResult,
+  IJupyterState,
   IOutcome,
   ITimingOutcome,
-  IProfilingOutcome
-} from './benchmark';
-import { IJupyterState } from './utils';
-import { IBenchmark, IScenario, IUIProfiler, IProgress } from './tokens';
+  IProfilingOutcome,
+  IBenchmark,
+  IScenario,
+  IUIProfiler,
+  IProgress
+} from './tokens';
 
-
-export interface IBenchmarkData {
-  options: {
-    scenario: JSONObject;
-    benchmark: JSONObject;
-  };
-  benchmark: string;
-  scenario: string;
-  userAgent: string;
-  hardwareConcurrency: number;
-  completed: Date;
-  windowSize: {
-    width: number;
-    height: number;
-  };
-  id: string;
-  jupyter: IJupyterState;
-}
-
-export interface IBenchmarkResultBase<T extends IOutcome> extends IBenchmarkData {
-  result: T;
-}
-
-function benchmarkId(result: Omit<IBenchmarkData, 'id'>): string {
+function benchmarkId(result: Omit<IBenchmarkResult, 'id'>): string {
   return [
     result.benchmark,
     result.scenario,
@@ -42,10 +24,9 @@ function benchmarkId(result: Omit<IBenchmarkData, 'id'>): string {
   ].join('_');
 }
 
-
 export class UIProfiler implements IUIProfiler {
   constructor(protected options: UIProfiler.IOptions) {
-     // no-op
+    // no-op
   }
 
   /**
@@ -60,7 +41,7 @@ export class UIProfiler implements IUIProfiler {
    */
   get progress(): ISignal<IUIProfiler, IProgress> {
     return this._progress;
-  };
+  }
 
   get benchmarks(): IBenchmark[] {
     return this.options.benchmarks;
@@ -70,7 +51,7 @@ export class UIProfiler implements IUIProfiler {
     return this._scenarios;
   }
 
-   /**
+  /**
    * Add scenario to profiler.
    */
   addScenario(scenario: IScenario): void {
@@ -80,19 +61,21 @@ export class UIProfiler implements IUIProfiler {
 
   async runBenchmark<T extends IOutcome = ITimingOutcome | IProfilingOutcome>(
     scenario: {
-      id: string
-      options: JSONObject
+      id: string;
+      options: JSONObject;
     },
     benchmark: {
-      id: string
-      options: JSONObject
+      id: string;
+      options: JSONObject;
     }
-  ): Promise<IBenchmarkResultBase<T>> {
-    const benchmarkRunner = this.options.benchmarks.find((b) => b.id == benchmark.id);
+  ): Promise<IBenchmarkResult<T>> {
+    const benchmarkRunner = this.options.benchmarks.find(
+      b => b.id === benchmark.id
+    );
     if (!benchmarkRunner) {
       throw Error(`Benchmark with id ${benchmark} not found`);
     }
-    const scenarioInstance = this._scenarios.find((s) => s.id == scenario.id);
+    const scenarioInstance = this._scenarios.find(s => s.id === scenario.id);
     if (!scenarioInstance) {
       throw Error(`Scenario with id ${scenario} not found`);
     }
@@ -112,8 +95,8 @@ export class UIProfiler implements IUIProfiler {
     } else {
       this._progress.emit({ percentage: 100 });
     }
-    const data: Omit<IBenchmarkResultBase<T>, 'id'> = {
-      result: result,
+    const data: Omit<IBenchmarkResult<T>, 'id'> = {
+      outcome: result,
       options: {
         benchmark: benchmark.options,
         scenario: scenario.options
@@ -144,8 +127,7 @@ export class UIProfiler implements IUIProfiler {
     return {
       client: app.name,
       version: app.version,
-      devMode:
-        (PageConfig.getOption('devMode') || '').toLowerCase() === 'true',
+      devMode: (PageConfig.getOption('devMode') || '').toLowerCase() === 'true',
       mode: PageConfig.getOption('mode') as DockPanel.Mode
     };
   }
@@ -158,7 +140,7 @@ export class UIProfiler implements IUIProfiler {
 
 namespace UIProfiler {
   export interface IOptions {
-    app: JupyterFrontEnd,
+    app: JupyterFrontEnd;
     benchmarks: IBenchmark[];
   }
 }

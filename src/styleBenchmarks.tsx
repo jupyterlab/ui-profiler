@@ -1,11 +1,8 @@
 import { JSONSchema7 } from 'json-schema';
 import React from 'react';
 
-import {
-  ITimeMeasurement,
-  ITimingOutcome,
-  benchmark
-} from './benchmark';
+import { benchmark } from './benchmark';
+import { ITimeMeasurement, ITimingOutcome } from './tokens';
 import { reportTagCounts, shuffled, iterateAffectedNodes } from './utils';
 import { layoutReady } from './dramaturg';
 import {

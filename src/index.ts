@@ -9,7 +9,7 @@ import { FileBrowserModel } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import { nullTranslator } from '@jupyterlab/translation';
 import { offlineBoltIcon } from '@jupyterlab/ui-components';
-import { UIProfilerWidget,ConstrainedUIProfiler} from './ui';
+import { UIProfilerWidget, ConstrainedUIProfiler } from './ui';
 import {
   styleSheetsBenchmark,
   styleRuleBenchmark,
@@ -18,7 +18,7 @@ import {
 } from './styleBenchmarks';
 import { selfProfileBenchmark } from './jsBenchmarks';
 import { executionTimeBenchmark } from './benchmark';
-import {IBenchmark,IUIProfiler } from './tokens';
+import { IBenchmark, IUIProfiler } from './tokens';
 import { UIProfiler } from './profiler';
 import { plugin as scenariosPlugin } from './scenarios';
 
@@ -27,7 +27,6 @@ namespace CommandIDs {
   export const openProfiler = 'ui-profiler:open';
 }
 
-
 /**
  * Initialization data for the @jupyterlab/ui-profiler extension.
  */
@@ -35,9 +34,7 @@ const plugin: JupyterFrontEndPlugin<IUIProfiler> = {
   id: '@jupyterlab/ui-profiler:plugin',
   autoStart: true,
   provides: IUIProfiler,
-  activate: (
-    app: JupyterFrontEnd
-  ) => {
+  activate: (app: JupyterFrontEnd) => {
     return new UIProfiler({
       app,
       benchmarks: [
@@ -51,7 +48,6 @@ const plugin: JupyterFrontEndPlugin<IUIProfiler> = {
     });
   }
 };
-
 
 const interfacePlugin: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/ui-profiler:user-interface',
@@ -139,8 +135,7 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
       });
     }
   }
-}
-
+};
 
 export * from './tokens';
 

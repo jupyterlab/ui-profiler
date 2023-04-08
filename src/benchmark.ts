@@ -5,38 +5,13 @@ import { layoutReady } from './dramaturg';
 import benchmarkExecutionOptionsSchema from './schema/benchmark-execution.json';
 import type { ExecutionTimeBenchmarkOptions } from './types/_benchmark-execution';
 import { renderTimings } from './ui';
-import { IBenchmark, IMeasurement, IScenario, IOutcomeBase } from './tokens';
-
-
-export interface ITimeMeasurement extends IMeasurement {
-  times: number[];
-}
-
-export interface IProfileMeasurement extends IMeasurement {
-  traces: ProfilerTrace[];
-  /**
-   * Average actual sampling interval.
-   */
-  averageSampleInterval: number;
-  /**
-   * Sampling interval reported by profiler.
-   */
-  samplingInterval: number;
-}
-
-export interface ITimingOutcome<T extends ITimeMeasurement = ITimeMeasurement>
-  extends IOutcomeBase<T> {
-  reference: number[];
-  type: 'time';
-}
-
-export interface IProfilingOutcome<
-  T extends IProfileMeasurement = IProfileMeasurement
-> extends IOutcomeBase<T> {
-  type: 'profile';
-}
-
-export type IOutcome = ITimingOutcome | IProfilingOutcome;
+import {
+  IBenchmark,
+  IScenario,
+  IProfileMeasurement,
+  ITimingOutcome,
+  ITimeMeasurement
+} from './tokens';
 
 export async function profile(
   scenario: IScenario,
