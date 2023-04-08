@@ -3,7 +3,6 @@ import { PageConfig } from '@jupyterlab/coreutils';
 import { JSONObject } from '@lumino/coreutils';
 import type { DockPanel } from '@lumino/widgets';
 import { ISignal, Signal } from '@lumino/signaling';
-import {} from './utils';
 import {
   IBenchmarkResult,
   IJupyterState,
