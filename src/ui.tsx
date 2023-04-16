@@ -8,15 +8,7 @@ import { JSONExt, JSONObject } from '@lumino/coreutils';
 import { PathExt } from '@jupyterlab/coreutils';
 import { Signal, ISignal } from '@lumino/signaling';
 import { Component as JSONComponent } from '@jupyterlab/json-extension/lib/component';
-import {
-  IBenchmark,
-  IOutcome,
-  ITimeMeasurement,
-  IProgress,
-  ITimingOutcome,
-  IProfilingOutcome
-} from './benchmark';
-import { formatTime, IJupyterState, extractBrowserVersion } from './utils';
+import { formatTime, extractBrowserVersion } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
 import { extractTimes, iterateFrames } from './jsBenchmarks';
 import {
@@ -27,18 +19,30 @@ import {
 import { Statistic } from './statistics';
 import { TimingTable, ResultTable } from './table';
 import { LuminoWidget } from './lumino';
-import { IScenario, IUIProfiler } from './tokens';
+import {
+  IOutcome,
+  ITimeMeasurement,
+  ITimingOutcome,
+  IProfilingOutcome,
+  IBenchmarkResult,
+  IScenario,
+  IUIProfiler,
+  IProgress,
+  IBenchmark
+} from './tokens';
+
+export type ConstrainedUIProfiler = Omit<IUIProfiler, 'benchmarks'> & {
+  benchmarks: (IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>)[];
+};
 
 interface IProfilerProps {
-  benchmarks: (IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>)[];
-  scenarios: IScenario[];
+  profiler: ConstrainedUIProfiler;
   /**
    * Translator object
    */
   translator: ITranslator;
   upload: (file: File) => Promise<Contents.IModel>;
   resultLocation: string;
-  getJupyterState: () => IJupyterState;
 }
 
 interface ILauncherProps extends IProfilerProps {
@@ -604,7 +608,7 @@ export function renderBlockResult(props: {
   );
 }
 
-export class UIProfiler extends ReactWidget implements IUIProfiler {
+export class UIProfilerWidget extends ReactWidget {
   constructor(private props: IProfilerProps) {
     super();
     this.progress = new Signal(this);
@@ -614,6 +618,12 @@ export class UIProfiler extends ReactWidget implements IUIProfiler {
     this.manager = new ServiceManager();
     this.resultAdded = new Signal(this);
     this.ensureResultsDirectory();
+    this.props.profiler.progress.connect((_, progress) => {
+      this.progress.emit(progress);
+    });
+    this.props.profiler.scenarioAdded.connect(() => {
+      this.update();
+    });
   }
 
   async ensureResultsDirectory() {
@@ -638,12 +648,12 @@ export class UIProfiler extends ReactWidget implements IUIProfiler {
 
   async loadResult(file: Contents.IModel): Promise<void> {
     file = await this.manager.contents.get(file.path);
-    this.handleResult(JSON.parse(file.content));
-  }
-
-  addScenario(scenario: IScenario) {
-    this.props.scenarios.push(scenario);
-    this.update();
+    const result = JSON.parse(file.content);
+    if (result.result) {
+      // handle the old format which used "result" instead of "outcome"
+      result.outcome = result.result;
+    }
+    this.handleResult(result);
   }
 
   async upload(file: File): Promise<Contents.IModel> {
@@ -667,10 +677,10 @@ export class UIProfiler extends ReactWidget implements IUIProfiler {
           {...this.props}
         />
         <BenchmarkResult<T>
-          result={this.result as IBenchmarkResultBase<T>}
-          scenarios={this.props.scenarios}
+          result={this.result as IBenchmarkResult<T>}
+          scenarios={this.props.profiler.scenarios}
           benchmarks={
-            this.props.benchmarks.filter(
+            this.props.profiler.benchmarks.filter(
               b => b.id === this.result?.benchmark
             ) as unknown as IBenchmark<T>[]
           }
@@ -781,7 +791,7 @@ export class BenchmarkHistory extends React.Component<
 }
 
 interface IResultProps<T extends IOutcome> {
-  result: IBenchmarkResultBase<T> | null;
+  result: IBenchmarkResult<T> | null;
   benchmarks: IBenchmark<T>[];
   scenarios: IScenario[];
 }
@@ -863,10 +873,10 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
       return wrap(<div>Unknown benchmark: {result.benchmark}</div>);
     }
     if (!benchmark.render && this._previousResult !== result.id) {
-      if (result.result.type === 'time') {
+      if (result.outcome.type === 'time') {
         this._table = new TimingTable({
-          measurements: (result.result as ITimingOutcome).results,
-          reference: (result.result as ITimingOutcome).reference,
+          measurements: (result.outcome as ITimingOutcome).results,
+          reference: (result.outcome as ITimingOutcome).reference,
           sortColumn: benchmark.sortColumn,
           stateSource: null,
           lowerIsBetter: false
@@ -876,10 +886,10 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
         this._table = null;
       }
     }
-    const tagsSummary = [...Object.entries(result.result.tags)]
+    const tagsSummary = [...Object.entries(result.outcome.tags)]
       .map(([tag, count]) => `${tag}:  ${count}`)
       .join('\n');
-    const totalTags = Statistic.sum([...Object.values(result.result.tags)]);
+    const totalTags = Statistic.sum([...Object.values(result.outcome.tags)]);
     return wrap(
       <>
         <div className="up-BenchmarkResult-summary">
@@ -887,9 +897,9 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
             <div>
               {benchmark.name} {scenario.name}
             </div>
-            {result.result.type === 'time'
-              ? timingSummary(result.result as ITimingOutcome)
-              : profilingSummary(result.result as IProfilingOutcome)}
+            {result.outcome.type === 'time'
+              ? timingSummary(result.outcome as ITimingOutcome)
+              : profilingSummary(result.outcome as IProfilingOutcome)}
           </div>
           <div className="up-BenchmarkResult-environmentInfo">
             <div>
@@ -930,7 +940,7 @@ export class BenchmarkResult<T extends IOutcome> extends React.Component<
             </details>
           ) : null}
           {benchmark.render ? (
-            <benchmark.render outcome={result.result as any} />
+            <benchmark.render outcome={result.outcome as any} />
           ) : this._table ? (
             <LuminoWidget widget={this._table} />
           ) : null}
@@ -1006,39 +1016,7 @@ export class BenchmarkMonitor extends React.Component<
   end: Date | null = null;
 }
 
-interface IBenchmarkData {
-  options: {
-    scenario: JSONObject;
-    benchmark: JSONObject;
-  };
-  benchmark: string;
-  scenario: string;
-  userAgent: string;
-  hardwareConcurrency: number;
-  completed: Date;
-  windowSize: {
-    width: number;
-    height: number;
-  };
-  id: string;
-  jupyter: IJupyterState;
-}
-
-interface IBenchmarkResultBase<T extends IOutcome> extends IBenchmarkData {
-  result: T;
-}
-
-type IBenchmarkResult<T extends IOutcome = ITimingOutcome | IProfilingOutcome> =
-  IBenchmarkResultBase<T>;
-
-function benchmarkId(result: Omit<IBenchmarkData, 'id'>): string {
-  return [
-    result.benchmark,
-    result.scenario,
-    result.completed.toISOString()
-  ].join('_');
-}
-function benchmarkFilename(result: IBenchmarkData): string {
+function benchmarkFilename(result: IBenchmarkResult): string {
   return result.id + '.profile.json';
 }
 
@@ -1062,9 +1040,11 @@ export class BenchmarkLauncher extends React.Component<
   constructor(props: ILauncherProps) {
     super(props);
     this._stop = new Signal(this);
+    const { profiler } = props;
     this.state = {
-      benchmarks: props.benchmarks.length !== 0 ? [props.benchmarks[0]] : [],
-      scenarios: props.scenarios.length !== 0 ? [props.scenarios[0]] : [],
+      benchmarks:
+        profiler.benchmarks.length !== 0 ? [profiler.benchmarks[0]] : [],
+      scenarios: profiler.scenarios.length !== 0 ? [profiler.scenarios[0]] : [],
       fieldTemplate: CustomTemplateFactory(this.props.translator),
       arrayFieldTemplate: CustomArrayTemplateFactory(this.props.translator),
       objectFieldTemplate: CustomObjectTemplateFactory(this.props.translator),
@@ -1079,48 +1059,22 @@ export class BenchmarkLauncher extends React.Component<
     scenario: IScenario,
     benchmark: IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>,
     config: IConfigValue
-  ): Promise<IBenchmarkResultBase<T>> {
-    const options = JSONExt.deepCopy({
-      scenario: config.scenarios[scenario.id],
-      benchmark: config.benchmarks[benchmark.id]
-    } as any);
-    if (scenario.setOptions) {
-      scenario.setOptions(options.scenario);
-    }
-    this.props.progress.emit({ percentage: 0 });
-    const result = (await benchmark.run(
-      scenario,
-      options.benchmark,
-      this.props.progress,
-      this._stop
-    )) as T;
-    if (result.interrupted) {
-      this.props.progress.emit({ percentage: NaN, interrupted: true });
-    } else {
-      this.props.progress.emit({ percentage: 100 });
-    }
-    const data: Omit<IBenchmarkResultBase<T>, 'id'> = {
-      result: result,
-      options: options,
-      benchmark: benchmark.id,
-      scenario: scenario.id,
-      userAgent: window.navigator.userAgent,
-      hardwareConcurrency: window.navigator.hardwareConcurrency,
-      completed: new Date(),
-      windowSize: {
-        width: window.innerWidth,
-        height: window.innerHeight
+  ): Promise<IBenchmarkResult<T>> {
+    return this.props.profiler.runBenchmark<T>(
+      {
+        id: scenario.id,
+        options: JSONExt.deepCopy(config.scenarios[scenario.id])
       },
-      jupyter: this.props.getJupyterState()
-    };
-    return {
-      ...data,
-      id: benchmarkId(data)
-    };
+      {
+        id: benchmark.id,
+        options: JSONExt.deepCopy(config.benchmarks[benchmark.id])
+      }
+    );
   }
 
   onBenchmarkChanged(event: React.ChangeEvent<HTMLInputElement>): void {
-    const matched = this.props.benchmarks.find(
+    const { profiler } = this.props;
+    const matched = profiler.benchmarks.find(
       benchmark => benchmark.id === event.target.value
     );
     if (!matched) {
@@ -1132,7 +1086,7 @@ export class BenchmarkLauncher extends React.Component<
     } else {
       activeBenchmarks = activeBenchmarks.filter(b => b.id !== matched.id);
     }
-    const referenceOrder = this.props.benchmarks.map(s => s.id);
+    const referenceOrder = profiler.benchmarks.map(s => s.id);
     activeBenchmarks.sort(
       (a, b) => referenceOrder.indexOf(a.id) - referenceOrder.indexOf(b.id)
     );
@@ -1142,7 +1096,8 @@ export class BenchmarkLauncher extends React.Component<
   }
 
   onScenarioChanged(event: React.ChangeEvent<HTMLInputElement>): void {
-    const matched = this.props.scenarios.find(
+    const { profiler } = this.props;
+    const matched = profiler.scenarios.find(
       scenario => scenario.id === event.target.value
     );
     if (!matched) {
@@ -1154,7 +1109,7 @@ export class BenchmarkLauncher extends React.Component<
     } else {
       activeScenarios = activeScenarios.filter(s => s.id !== matched.id);
     }
-    const referenceOrder = this.props.scenarios.map(s => s.id);
+    const referenceOrder = profiler.scenarios.map(s => s.id);
     activeScenarios.sort(
       (a, b) => referenceOrder.indexOf(a.id) - referenceOrder.indexOf(b.id)
     );
@@ -1211,11 +1166,15 @@ export class BenchmarkLauncher extends React.Component<
   }
 
   stopCurrent(): void {
+    // interruped scheduling
     this._stop.emit();
+    // interrupt currently running benchmark if any
+    this.props.profiler.abortBenchmark();
   }
 
   render(): JSX.Element {
-    const benchmarks = this.props.benchmarks.map(benchmark => {
+    const { profiler } = this.props;
+    const benchmarks = profiler.benchmarks.map(benchmark => {
       const disabled = benchmark.isAvailable ? !benchmark.isAvailable() : false;
       return (
         <label
@@ -1236,7 +1195,7 @@ export class BenchmarkLauncher extends React.Component<
         </label>
       );
     });
-    const scenarios = this.props.scenarios.map(scenario => {
+    const scenarios = profiler.scenarios.map(scenario => {
       return (
         <label key={scenario.id}>
           <input

@@ -1,12 +1,8 @@
 import { JSONSchema7 } from 'json-schema';
 import React from 'react';
 
-import {
-  ITimeMeasurement,
-  ITimingOutcome,
-  IBenchmark,
-  benchmark
-} from './benchmark';
+import { benchmark } from './benchmark';
+import { ITimeMeasurement, ITimingOutcome } from './tokens';
 import { reportTagCounts, shuffled, iterateAffectedNodes } from './utils';
 import { layoutReady } from './dramaturg';
 import {
@@ -16,7 +12,7 @@ import {
   collectRules
 } from './css';
 import { renderBlockResult } from './ui';
-import { IScenario } from './tokens';
+import { IBenchmark, IScenario } from './tokens';
 
 import benchmarkOptionsSchema from './schema/benchmark-base.json';
 import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';
