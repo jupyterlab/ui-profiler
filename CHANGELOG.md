@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.0
+
+([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.1.8...3c4d2c8f2f80ba5e81c16b1dea2b77d76c209766))
+
+### Enhancements made
+
+- Separate profiler out of the user interface [#46](https://github.com/jupyterlab/ui-profiler/pull/46) ([@krassowski](https://github.com/krassowski))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-04-02&to=2023-04-23&type=c))
+
+[@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-04-02..2023-04-23&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.1.8
 
 ([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.1.7...528461f6f554e6656475aa2054c3ec12240f65e5))
@@ -27,8 +43,6 @@
 ([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-02-11&to=2023-04-02&type=c))
 
 [@CommanderPho](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3ACommanderPho+updated%3A2023-02-11..2023-04-02&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Adependabot+updated%3A2023-02-11..2023-04-02&type=Issues) | [@github-actions](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Agithub-actions+updated%3A2023-02-11..2023-04-02&type=Issues) | [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-02-11..2023-04-02&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Awelcome+updated%3A2023-02-11..2023-04-02&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.1.7
 
