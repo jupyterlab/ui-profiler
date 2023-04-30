@@ -64,6 +64,20 @@
           "required": ["setupText", "triggerCell"]
         }
       ]
+    },
+    "widgetPosition": {
+      "title": "Widget position in the layout",
+      "description": "Where to attach the editor widget in the layout",
+      "type": "string",
+      "enum": [
+        "split-top",
+        "split-left",
+        "split-right",
+        "split-bottom",
+        "tab-before",
+        "tab-after"
+      ],
+      "default": "split-right"
     }
   },
   "required": ["editor", "setup"],

@@ -47,6 +47,20 @@
       "description": "Text to populate editors/cells with.",
       "type": "string",
       "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    },
+    "widgetPosition": {
+      "title": "Widget position in the layout",
+      "description": "Where to attach the editor widget in the layout",
+      "type": "string",
+      "enum": [
+        "split-top",
+        "split-left",
+        "split-right",
+        "split-bottom",
+        "tab-before",
+        "tab-after"
+      ],
+      "default": "split-right"
     }
   },
   "required": ["editor", "cells", "scrollTop", "scrollBehavior"],

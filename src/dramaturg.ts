@@ -188,6 +188,11 @@ export class ElementHandle {
   type(text: string, options = { delay: 0 }): Promise<void> {
     return type(text, options, this.element);
   }
+  async isVisible(): Promise<boolean> {
+    const size = this.element.getBoundingClientRect();
+    const notVisible = size.width === 0 || size.height === 0;
+    return !notVisible;
+  }
   waitForSelector(
     selector: string,
     options: IWaitForSelectorOptions

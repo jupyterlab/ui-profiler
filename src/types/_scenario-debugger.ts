@@ -13,8 +13,19 @@ export type CodeToExecute = string[];
  * The scenario waits until debugger panel is populated with at least as many variables as specified. For accurate timings should have as many members as there are code cells.
  */
 export type ExpectedNumberOfVariables = number[];
+/**
+ * Where to attach the editor widget in the layout
+ */
+export type WidgetPositionInTheLayout =
+  | 'split-top'
+  | 'split-left'
+  | 'split-right'
+  | 'split-bottom'
+  | 'tab-before'
+  | 'tab-after';
 
 export interface DebuggerScenarioOptions {
   codeCells: CodeToExecute;
   expectedNumberOfVariables: ExpectedNumberOfVariables;
+  widgetPosition?: WidgetPositionInTheLayout;
 }

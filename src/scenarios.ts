@@ -189,7 +189,9 @@ class SingleEditorScenario<
       }
     );
     this.widget = widget;
-    this.jupyterApp.shell.add(this.widget, 'main', { mode: 'split-right' });
+    this.jupyterApp.shell.add(this.widget, 'main', {
+      mode: this.options?.widgetPosition || 'split-right'
+    });
     await activateTabWidget(this.jupyterApp, widget);
     await layoutReady();
     if (this.useNotebook) {
@@ -323,6 +325,25 @@ export class CompleterScenario
   }
 }
 
+async function ensureToolbarButtonsVisible() {
+  const secondToolbarSelector = '.jp-Toolbar-responsive-popup';
+  const moreCommandsButton = await page.$(
+    '.jp-Toolbar-responsive-opener > button[title="More commands"]'
+  );
+  if (moreCommandsButton && (await moreCommandsButton.isVisible())) {
+    const secondToolbar = await page.$(secondToolbarSelector);
+    if (secondToolbar && (await secondToolbar.isVisible())) {
+      // already visible
+      return;
+    }
+    // make sure second toolbar is visible
+    await moreCommandsButton.click();
+    await page.waitForSelector(secondToolbarSelector, {
+      state: 'visible'
+    });
+  }
+}
+
 export class DebuggerScenario
   extends SingleEditorScenario<IExtendedDebuggerScenarioOptions>
   implements IScenario
@@ -368,6 +389,7 @@ export class DebuggerScenario
 
     await waitForKernelStatus(this.widget.node, 'idle');
     const handle = new ElementHandle(this.widget.node);
+    await ensureToolbarButtonsVisible();
     const bugIcon = await handle.waitForSelector(
       'button[aria-disabled="false"][title="Enable Debugger"]',
       {
@@ -378,6 +400,7 @@ export class DebuggerScenario
     await page.waitForSelector(`#${CSS.escape('jp-debugger-sidebar')}`, {
       state: 'visible'
     });
+    await ensureToolbarButtonsVisible();
     await handle.waitForSelector(
       'button[aria-disabled="false"][title="Disable Debugger"]',
       {

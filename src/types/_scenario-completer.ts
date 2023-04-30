@@ -35,11 +35,22 @@ export type TriggerCode = string;
  * Code to run prior to invoking completer, e.g. `import numpy as np`. Only has an effect in notebook.
  */
 export type CodeToRunNotebookOnly = string;
+/**
+ * Where to attach the editor widget in the layout
+ */
+export type WidgetPositionInTheLayout =
+  | 'split-top'
+  | 'split-left'
+  | 'split-right'
+  | 'split-bottom'
+  | 'tab-before'
+  | 'tab-after';
 
 export interface CompleterScenarioOptions {
   editor: EditorType;
   path?: PathToDocument;
   setup: EditorSetupForCompletion;
+  widgetPosition?: WidgetPositionInTheLayout;
 }
 export interface AutoGenerateTokensToComplete {
   tokenCount: TokenCount;
