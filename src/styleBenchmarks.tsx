@@ -19,10 +19,10 @@ import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';
 import benchmarkRuleGroupOptionsSchema from './schema/benchmark-rule-group.json';
 import benchmarkRuleUsageOptionsSchema from './schema/benchmark-rule-usage.json';
 
-import type { BenchmarkOptions } from './types/_benchmark-base';
-import type { StyleRuleBenchmarkOptions } from './types/_benchmark-rule';
-import type { StyleRuleGroupBenchmarkOptions } from './types/_benchmark-rule-group';
-import type { StyleRuleUsageOptions } from './types/_benchmark-rule-usage';
+import type { BenchmarkOptions } from './types';
+import type { StyleRuleBenchmarkOptions } from './types';
+import type { StyleRuleGroupBenchmarkOptions } from './types';
+import type { StyleRuleUsageOptions } from './types';
 
 interface IStylesheetResult extends ITimeMeasurement {
   content: string | null;

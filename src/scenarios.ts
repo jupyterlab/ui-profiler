@@ -14,12 +14,15 @@ import {
 } from './dramaturg';
 import { IScenario, IUIProfiler } from './tokens';
 
-import type { TabScenarioOptions, Tab } from './types/_scenario-tabs';
-import type { MenuOpenScenarioOptions } from './types/_scenario-menu-open';
-import type { CompleterScenarioOptions } from './types/_scenario-completer';
-import type { SidebarsScenarioOptions } from './types/_scenario-sidebars';
-import type { ScrollScenarioOptions } from './types/_scenario-scroll';
-import type { DebuggerScenarioOptions } from './types/_scenario-debugger';
+import type { Tab } from './types/_scenario-tabs';
+import type {
+  MenuOpenScenarioOptions,
+  CompleterScenarioOptions,
+  SidebarsScenarioOptions,
+  TabScenarioOptions,
+  ScrollScenarioOptions,
+  DebuggerScenarioOptions
+} from './types';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
 import scenarioMenuOpenOptionsSchema from './schema/scenario-menu-open.json';

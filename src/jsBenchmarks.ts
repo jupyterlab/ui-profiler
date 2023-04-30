@@ -8,7 +8,7 @@ import { renderProfile } from './ui';
 import { IBenchmark, IScenario } from './tokens';
 
 import benchmarkProfileOptionsSchema from './schema/benchmark-profile.json';
-import type { ProfileBenchmarkOptions } from './types/_benchmark-profile';
+import type { ProfileBenchmarkOptions } from './types';
 
 interface IFunctionTiming {
   time: number;
