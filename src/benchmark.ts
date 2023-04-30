@@ -3,7 +3,7 @@ import { Statistic } from './statistics';
 import { reportTagCounts } from './utils';
 import { layoutReady } from './dramaturg';
 import benchmarkExecutionOptionsSchema from './schema/benchmark-execution.json';
-import type { ExecutionTimeBenchmarkOptions } from './types/_benchmark-execution';
+import type { ExecutionTimeBenchmarkOptions } from './types';
 import { renderTimings } from './ui';
 import {
   IBenchmark,

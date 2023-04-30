@@ -138,5 +138,6 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
 };
 
 export * from './tokens';
+export * from './types';
 
 export default [plugin, scenariosPlugin, interfacePlugin];
