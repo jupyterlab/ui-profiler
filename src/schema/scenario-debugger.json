@@ -23,6 +23,20 @@
         "min": 0
       },
       "default": [1000, 1001]
+    },
+    "widgetPosition": {
+      "title": "Widget position in the layout",
+      "description": "Where to attach the editor widget in the layout",
+      "type": "string",
+      "enum": [
+        "split-top",
+        "split-left",
+        "split-right",
+        "split-bottom",
+        "tab-before",
+        "tab-after"
+      ],
+      "default": "split-right"
     }
   },
   "required": ["codeCells", "expectedNumberOfVariables"],

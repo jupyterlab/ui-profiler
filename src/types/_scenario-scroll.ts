@@ -33,6 +33,16 @@ export type NumberOfCellsBlocksToAppend = number;
  * Text to populate editors/cells with.
  */
 export type EditorCellContent = string;
+/**
+ * Where to attach the editor widget in the layout
+ */
+export type WidgetPositionInTheLayout =
+  | 'split-top'
+  | 'split-left'
+  | 'split-right'
+  | 'split-bottom'
+  | 'tab-before'
+  | 'tab-after';
 
 export interface ScrollScenarioOptions {
   scrollTop: ScrollFromTop;
@@ -42,4 +52,5 @@ export interface ScrollScenarioOptions {
   path?: PathToDocument;
   cells: NumberOfCellsBlocksToAppend;
   editorContent?: EditorCellContent;
+  widgetPosition?: WidgetPositionInTheLayout;
 }
