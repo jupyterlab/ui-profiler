@@ -64,7 +64,7 @@ export async function extractSourceMap(
 
 export async function collectRules(
   styles: HTMLStyleElement[],
-  options: { skipPattern?: RegExp }
+  options: { skipPattern?: RegExp; includePattern?: RegExp }
 ): Promise<IRuleData[]> {
   let j = 0;
   const allRules: IRuleData[] = [];
@@ -85,6 +85,12 @@ export async function collectRules(
       if (
         options.skipPattern &&
         rule.selectorText.match(options.skipPattern) != null
+      ) {
+        continue;
+      }
+      if (
+        options.includePattern &&
+        rule.selectorText.match(options.includePattern) == null
       ) {
         continue;
       }

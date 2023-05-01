@@ -17,6 +17,11 @@
       "title": "Regular expression to filter out classes used for rule discovery",
       "type": "string",
       "default": "(fa-|jp-icon|Icon|lm-Widget|lm-mod-|jp-mod-|p-mod-|p-Widget)"
+    },
+    "includePattern": {
+      "title": "Regular expression to filter rules to include",
+      "type": "string",
+      "default": ""
     }
   }
 }

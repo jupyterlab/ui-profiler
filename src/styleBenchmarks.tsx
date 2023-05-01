@@ -14,23 +14,23 @@ import {
 import { renderBlockResult } from './ui';
 import { IBenchmark, IScenario } from './tokens';
 
-import benchmarkOptionsSchema from './schema/benchmark-base.json';
 import benchmarkRuleOptionsSchema from './schema/benchmark-rule.json';
 import benchmarkRuleGroupOptionsSchema from './schema/benchmark-rule-group.json';
 import benchmarkRuleUsageOptionsSchema from './schema/benchmark-rule-usage.json';
+import benchmarkSheetOptionsSchema from './schema/benchmark-sheet.json';
 
-import type { BenchmarkOptions } from './types';
 import type { StyleRuleBenchmarkOptions } from './types';
 import type { StyleRuleGroupBenchmarkOptions } from './types';
 import type { StyleRuleUsageOptions } from './types';
+import type { StyleSheetBenchmarkOptions } from './types';
 
-interface IStylesheetResult extends ITimeMeasurement {
+export interface IStylesheetResult extends ITimeMeasurement {
   content: string | null;
   source: string | null;
   stylesheetIndex: number;
 }
 
-interface IRuleResult extends ITimeMeasurement, IRuleDescription {
+export interface IRuleResult extends ITimeMeasurement, IRuleDescription {
   // no-op
 }
 
@@ -96,6 +96,9 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       const skipPattern = options.skipPattern
         ? new RegExp(options.skipPattern, 'g')
         : undefined;
+      const includePattern = options.includePattern
+        ? new RegExp(options.includePattern, 'g')
+        : undefined;
       const excludePattern = options.excludeMatchPattern
         ? new RegExp(options.excludeMatchPattern, 'g')
         : undefined;
@@ -151,7 +154,10 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
       // Find relevant style rules.
       const results: IRuleResult[] = [];
       const styles = [...document.querySelectorAll('style')];
-      const allRules = await collectRules(styles, { skipPattern });
+      const allRules = await collectRules(styles, {
+        skipPattern,
+        includePattern
+      });
       const relevantRules = new Set<IRuleData>();
       for (const rule of allRules) {
         for (const className of relevantClassNames) {
@@ -281,10 +287,10 @@ export const styleSheetsBenchmark: IBenchmark<
 > = {
   id: 'style-sheet',
   name: 'Style Sheets',
-  configSchema: benchmarkOptionsSchema as JSONSchema7,
+  configSchema: benchmarkSheetOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: BenchmarkOptions = {},
+    options: StyleSheetBenchmarkOptions = {},
     progress,
     stopSignal
   ): Promise<ITimingOutcome<IStylesheetResult>> => {
@@ -304,6 +310,9 @@ export const styleSheetsBenchmark: IBenchmark<
     const results: IStylesheetResult[] = [];
     let j = 0;
     let sheetIndex = 0;
+    const includePattern = options.includePattern
+      ? new RegExp(options.includePattern, 'g')
+      : undefined;
     const stylesWithSheets = styles.filter(style => style.sheet);
     if (stylesWithSheets.length !== styles.length) {
       console.log(
@@ -314,6 +323,8 @@ export const styleSheetsBenchmark: IBenchmark<
         'total)'
       );
     }
+    const total = stylesWithSheets.length;
+
     for (const style of styles) {
       if (stop) {
         break;
@@ -322,13 +333,27 @@ export const styleSheetsBenchmark: IBenchmark<
       const sheet = style.sheet;
       // Always increment the sheet index.
       sheetIndex++;
+
       if (!sheet) {
         continue;
       }
 
       // Only increment the loop control variable if style included in denominator.
-      progress?.emit({ percentage: (100 * j) / stylesWithSheets.length });
+      progress?.emit({ percentage: (100 * j) / total });
       j++;
+
+      // Extract CSS map
+      const cssMap = await extractSourceMap(style.textContent);
+      const source = cssMap != null ? cssMap.sources[0] : null;
+
+      if (includePattern) {
+        if (source === null) {
+          continue;
+        }
+        if (source.match(includePattern) == null) {
+          continue;
+        }
+      }
 
       // Benchmark the style.
       sheet.disabled = true;
@@ -337,14 +362,11 @@ export const styleSheetsBenchmark: IBenchmark<
       await layoutReady();
       sheet.disabled = false;
 
-      // Extract CSS map
-      const cssMap = await extractSourceMap(style.textContent);
-
       // Store result.
       results.push({
         ...measurements,
         content: style.textContent,
-        source: cssMap != null ? cssMap.sources[0] : null,
+        source: source,
         stylesheetIndex: sheetIndex
       });
     }
@@ -382,6 +404,9 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
       : undefined;
+    const includePattern = options.includePattern
+      ? new RegExp(options.includePattern, 'g')
+      : undefined;
     const start = Date.now();
     if (scenario.setupSuite) {
       await scenario.setupSuite();
@@ -390,7 +415,7 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
     const reference = await benchmark(scenario, n * 2, true);
     console.log('Reference for', scenario.name, 'is:', reference);
     const results: IRuleResult[] = [];
-    const rules = await collectRules(styles, { skipPattern });
+    const rules = await collectRules(styles, { skipPattern, includePattern });
     for (let i = 0; i < rules.length; i++) {
       if (stop) {
         break;
@@ -464,6 +489,9 @@ export const styleRuleGroupBenchmark: IBenchmark<
     const skipPattern = options.skipPattern
       ? new RegExp(options.skipPattern, 'g')
       : undefined;
+    const includePattern = options.includePattern
+      ? new RegExp(options.includePattern, 'g')
+      : undefined;
     const maxBlocks = options.maxBlocks || 5;
     const minBlocks = options.minBlocks || 2;
     const start = Date.now();
@@ -488,7 +516,10 @@ export const styleRuleGroupBenchmark: IBenchmark<
       if (randomization !== 0) {
         styles = shuffled(styles);
       }
-      const allRules = await collectRules(styles, { skipPattern });
+      const allRules = await collectRules(styles, {
+        skipPattern,
+        includePattern
+      });
       console.log(
         `Collected ${allRules.length} rules, randomization: ${randomization}`
       );

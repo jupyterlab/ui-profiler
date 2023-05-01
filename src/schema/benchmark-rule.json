@@ -12,6 +12,11 @@
       "title": "Regular expression to filter out rules",
       "type": "string",
       "default": "(fa-|Icon|bp3|mod-hidden)"
+    },
+    "includePattern": {
+      "title": "Regular expression to filter rules to include",
+      "type": "string",
+      "default": ""
     }
   }
 }

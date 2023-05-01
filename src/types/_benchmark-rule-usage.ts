@@ -8,10 +8,12 @@
 export type NumberOfRepeats = number;
 export type RegularExpressionToFilterOutRules = string;
 export type RegularExpressionToFilterOutClassesUsedForRuleDiscovery = string;
+export type RegularExpressionToFilterRulesToInclude = string;
 
 export interface StyleRuleUsageOptions {
   repeats?: NumberOfRepeats;
   skipPattern?: RegularExpressionToFilterOutRules;
   excludeMatchPattern?: RegularExpressionToFilterOutClassesUsedForRuleDiscovery;
+  includePattern?: RegularExpressionToFilterRulesToInclude;
   [k: string]: any;
 }
