@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.2.2
+
+([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.2.1...61c99c34b8de4ff8f0ac0da4b1af50e774cd543a))
+
+### Enhancements made
+
+- Allow to filter sheet and rule benchmarks to only include some rules [#50](https://github.com/jupyterlab/ui-profiler/pull/50) ([@krassowski](https://github.com/krassowski))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-04-30&to=2023-05-01&type=c))
+
+[@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-04-30..2023-05-01&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.2.1
 
 ([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.2.0...308598c8f2f2c344fee6d9ccffd1c379f8b8ecbc))
@@ -19,8 +35,6 @@
 ([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-04-23&to=2023-04-30&type=c))
 
 [@github-actions](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Agithub-actions+updated%3A2023-04-23..2023-04-30&type=Issues) | [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-04-23..2023-04-30&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.2.0
 
