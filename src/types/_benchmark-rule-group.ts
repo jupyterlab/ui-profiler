@@ -10,6 +10,7 @@ export type RegularExpressionToFilterOutRules = string;
 export type BlockSizeToStartWith = number;
 export type MaximalBlockSize = number;
 export type NumberOfSheetRandomizations = number;
+export type RegularExpressionToFilterRulesToInclude = string;
 
 export interface StyleRuleGroupBenchmarkOptions {
   repeats?: NumberOfRepeats;
@@ -17,5 +18,6 @@ export interface StyleRuleGroupBenchmarkOptions {
   minBlocks?: BlockSizeToStartWith;
   maxBlocks?: MaximalBlockSize;
   sheetRandomizations?: NumberOfSheetRandomizations;
+  includePattern?: RegularExpressionToFilterRulesToInclude;
   [k: string]: any;
 }

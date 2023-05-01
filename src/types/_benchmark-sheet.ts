@@ -6,12 +6,10 @@
  */
 
 export type NumberOfRepeats = number;
-export type RegularExpressionToFilterOutRules = string;
-export type RegularExpressionToFilterRulesToInclude = string;
+export type RegularExpressionToFilterSheetsToBenchmark = string;
 
-export interface StyleRuleBenchmarkOptions {
+export interface StyleSheetBenchmarkOptions {
   repeats?: NumberOfRepeats;
-  skipPattern?: RegularExpressionToFilterOutRules;
-  includePattern?: RegularExpressionToFilterRulesToInclude;
+  includePattern?: RegularExpressionToFilterSheetsToBenchmark;
   [k: string]: any;
 }

@@ -30,6 +30,11 @@
       "type": "integer",
       "minimum": 0,
       "default": 5
+    },
+    "includePattern": {
+      "title": "Regular expression to filter rules to include",
+      "type": "string",
+      "default": ""
     }
   }
 }
