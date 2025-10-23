@@ -530,6 +530,9 @@ export class CreateCellsScenario
     if (!this.widget || !this.options) {
       throw new Error('Scenario setup failure');
     }
+    for (let i = 0; i < this.options.cells; i++) {
+      await this.jupyterApp.commands.execute('notebook:delete-cell');
+    }
   }
 }
 
