@@ -15,6 +15,7 @@ c.ServerApp.token = ""
 c.ServerApp.password = ""
 c.ServerApp.disable_check_xsrf = True
 c.LabApp.expose_app_in_browser = True
+c.LabApp.check_for_updates_class = "jupyterlab.NeverCheckForUpdate"
 
 # Uncomment to set server log level to debug level
 # c.ServerApp.log_level = "DEBUG"
