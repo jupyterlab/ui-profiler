@@ -13,25 +13,29 @@ const fileNames = [
   'rule-usage_menuOpen.profile.json',
   'style-rule_menuOpen.profile.json'
 ];
+const RESULTS_PATH = 'predefined-results';
 
-test.use({ tmpPath: 'ui-profiler-results' });
-test.describe.configure({ mode: 'parallel' });
+test.use({ tmpPath: 'results' });
+test.describe.configure({ mode: 'serial' });
 
 test.describe('Results', () => {
   test.beforeAll(async ({ baseURL, request, tmpPath }) => {
     const contents = galata.newContentsHelper(baseURL, undefined, request);
     // re-create directory to ensure there are no stale results
-    await contents.deleteDirectory('ui-profiler-results');
-    await contents.createDirectory('ui-profiler-results');
+    await contents.deleteDirectory(RESULTS_PATH);
+    await contents.createDirectory(RESULTS_PATH);
     for (const fileName of fileNames) {
       await contents.uploadFile(
-        path.resolve(__dirname, `./ui-profiler-results/${fileName}`),
+        path.resolve(__dirname, `./${RESULTS_PATH}/${fileName}`),
         `${tmpPath}/${fileName}`
       );
     }
   });
 
   test.beforeEach(async ({ page }) => {
+    await page
+      .locator('body')
+      .evaluate(element => (element.dataset['profilerDir'] = RESULTS_PATH));
     const handle = await page.waitForSelector(PROFILER_CARD_SELECTOR);
     await handle.click();
     await page
