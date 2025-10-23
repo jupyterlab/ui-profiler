@@ -11,4 +11,5 @@ export type { MenuOpenScenarioOptions } from './_scenario-menu-open';
 export type { CompleterScenarioOptions } from './_scenario-completer';
 export type { SidebarsScenarioOptions } from './_scenario-sidebars';
 export type { ScrollScenarioOptions } from './_scenario-scroll';
+export type { CreateCellsScenarioOptions } from './_scenario-create-cells';
 export type { DebuggerScenarioOptions } from './_scenario-debugger';

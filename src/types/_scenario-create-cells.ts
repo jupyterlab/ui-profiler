@@ -6,21 +6,9 @@
  */
 
 /**
- * Number of pixes to scroll by
+ * Editor widget to test cell creation in
  */
-export type ScrollFromTop = number;
-/**
- * Behavior of scroll, either 'smooth' for smooth scrolling, or 'auto' for instant scrolling.
- */
-export type ScrollBehaviour = 'smooth' | 'auto';
-/**
- * Instead of scrolling, traverse notebook cell-by-cell (which also combines stepwise scrolling and cell activation/deactivation). Small number of cells (50-100) is recommended for benchmarking such scenario. 'scrollTop' and 'scrollBehavior' have no effect if this variant is enabled. Has no effect in file editor.
- */
-export type TraverseCellByCell = boolean;
-/**
- * Editor widget to test scroll in
- */
-export type EditorType = 'Notebook' | 'File Editor';
+export type WidgetType = 'Notebook';
 /**
  * Optional path to an existing document of specified editor type. When empty (default) a new temporary file will be created.
  */
@@ -33,6 +21,7 @@ export type NumberOfCellsBlocksToAppend = number;
  * Text to populate editors/cells with.
  */
 export type EditorCellContent = string;
+export type CellType = 'code' | 'markdown' | 'raw';
 /**
  * Where to attach the editor widget in the layout
  */
@@ -44,13 +33,11 @@ export type WidgetPositionInTheLayout =
   | 'tab-before'
   | 'tab-after';
 
-export interface ScrollScenarioOptions {
-  scrollTop: ScrollFromTop;
-  scrollBehavior: ScrollBehaviour;
-  cellByCell?: TraverseCellByCell;
-  editor: EditorType;
+export interface CreateCellsScenarioOptions {
+  editor: WidgetType;
   path?: PathToDocument;
   cells: NumberOfCellsBlocksToAppend;
   editorContent?: EditorCellContent;
+  cellType?: CellType;
   widgetPosition?: WidgetPositionInTheLayout;
 }

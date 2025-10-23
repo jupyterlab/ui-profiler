@@ -21,7 +21,8 @@ import type {
   SidebarsScenarioOptions,
   TabScenarioOptions,
   ScrollScenarioOptions,
-  DebuggerScenarioOptions
+  DebuggerScenarioOptions,
+  CreateCellsScenarioOptions
 } from './types';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
@@ -31,6 +32,7 @@ import scenarioCompleterOptionsSchema from './schema/scenario-completer.json';
 import scenarioDebuggerOptionsSchema from './schema/scenario-debugger.json';
 import scenarioSidebarsSchema from './schema/scenario-sidebars.json';
 import scenarioScrollSchema from './schema/scenario-scroll.json';
+import scenarioCreateCellsSchema from './schema/scenario-create-cells.json';
 
 async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
   for (const menu of ['edit', 'view', 'run', 'kernel', 'settings', 'help']) {
@@ -154,6 +156,7 @@ class SingleEditorScenario<
   T extends
     | CompleterScenarioOptions
     | ScrollScenarioOptions
+    | CreateCellsScenarioOptions
     | IExtendedDebuggerScenarioOptions
 > {
   constructor(protected jupyterApp: JupyterFrontEnd) {
@@ -482,6 +485,55 @@ async function activateTabWidget(
   await layoutReady();
 }
 
+export class CreateCellsScenario
+  extends SingleEditorScenario<CreateCellsScenarioOptions>
+  implements IScenario
+{
+  id = 'create-cells';
+  name = 'Create cells';
+  configSchema = scenarioCreateCellsSchema as any as JSONSchema7;
+
+  async setupSuite(): Promise<void> {
+    await super.setupSuite();
+    if (!this.widget || !this.options) {
+      throw new Error('Parent setup failure');
+    }
+    await layoutReady();
+  }
+
+  async run(): Promise<void> {
+    if (!this.widget || !this.options) {
+      throw new Error('Scenario setup failure');
+    }
+    for (let i = 0; i < this.options.cells; i++) {
+      await this.jupyterApp.commands.execute('notebook:insert-cell-below');
+      if (this.options.cellType === "raw") {
+        await this.jupyterApp.commands.execute('notebook:change-cell-to-raw');
+      }
+      else if (this.options.cellType === "markdown") {
+        await this.jupyterApp.commands.execute('notebook:change-cell-to-markdown');
+      }
+      if (this.options.editorContent) {
+        await insertText(
+          this.jupyterApp,
+          this.useNotebook
+            ? this.options.editorContent
+            : this.options.editorContent + '\n'
+        );
+      }
+      await layoutReady();
+    }
+    await layoutReady();
+  }
+
+  async cleanup(): Promise<void> {
+    if (!this.widget || !this.options) {
+      throw new Error('Scenario setup failure');
+    }
+  }
+}
+
+
 export class ScrollScenario
   extends SingleEditorScenario<ScrollScenarioOptions>
   implements IScenario
@@ -519,7 +571,7 @@ export class ScrollScenario
 
   async run(): Promise<void> {
     if (!this.widget || !this.options) {
-      throw new Error('Scrol scenario setup failure');
+      throw new Error('Scroll scenario setup failure');
     }
     if (this.options.cellByCell && this.useNotebook) {
       for (let i = 0; i < this.options.cells; i++) {
@@ -540,7 +592,7 @@ export class ScrollScenario
 
   async cleanup(): Promise<void> {
     if (!this.widget || !this.options) {
-      throw new Error('Scrol scenario setup failure');
+      throw new Error('Scroll scenario setup failure');
     }
     if (this.options.cellByCell && this.useNotebook) {
       for (let i = 0; i < this.options.cells; i++) {
@@ -634,7 +686,8 @@ export const plugin: JupyterFrontEndPlugin<void> = {
       new SidebarOpenScenario(app),
       new CompleterScenario(app),
       new ScrollScenario(app),
-      new DebuggerScenario(app)
+      new DebuggerScenario(app),
+      new CreateCellsScenario(app)
     ].map(scenario => profiler.addScenario(scenario));
   }
 };

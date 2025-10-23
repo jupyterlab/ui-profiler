@@ -1,32 +1,12 @@
 {
-  "title": "Scroll Scenario Options",
+  "title": "Create Cells Scenario Options",
   "type": "object",
   "properties": {
-    "scrollTop": {
-      "title": "Scroll from top",
-      "description": "Number of pixes to scroll by",
-      "type": "number",
-      "minimum": 0,
-      "default": 10000
-    },
-    "scrollBehavior": {
-      "title": "Scroll behaviour",
-      "description": "Behavior of scroll, either 'smooth' for smooth scrolling, or 'auto' for instant scrolling.",
-      "type": "string",
-      "enum": ["smooth", "auto"],
-      "default": "smooth"
-    },
-    "cellByCell": {
-      "title": "Traverse cell-by-cell",
-      "description": "Instead of scrolling, traverse notebook cell-by-cell (which also combines stepwise scrolling and cell activation/deactivation). Small number of cells (50-100) is recommended for benchmarking such scenario. 'scrollTop' and 'scrollBehavior' have no effect if this variant is enabled. Has no effect in file editor.",
-      "type": "boolean",
-      "default": false
-    },
     "editor": {
-      "title": "Editor type",
-      "description": "Editor widget to test scroll in",
+      "title": "Widget type",
+      "description": "Editor widget to test cell creation in",
       "type": "string",
-      "enum": ["Notebook", "File Editor"],
+      "enum": ["Notebook"],
       "default": "Notebook"
     },
     "path": {
@@ -48,6 +28,12 @@
       "type": "string",
       "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
     },
+    "cellType": {
+      "title": "Cell type",
+      "type": "string",
+      "enum": ["code", "markdown", "raw"],
+      "default": "code"
+    },
     "widgetPosition": {
       "title": "Widget position in the layout",
       "description": "Where to attach the editor widget in the layout",
@@ -63,6 +49,6 @@
       "default": "split-right"
     }
   },
-  "required": ["editor", "cells", "scrollTop", "scrollBehavior"],
+  "required": ["editor", "cells"],
   "additionalProperties": false
 }
