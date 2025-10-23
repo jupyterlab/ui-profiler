@@ -507,11 +507,12 @@ export class CreateCellsScenario
     }
     for (let i = 0; i < this.options.cells; i++) {
       await this.jupyterApp.commands.execute('notebook:insert-cell-below');
-      if (this.options.cellType === "raw") {
+      if (this.options.cellType === 'raw') {
         await this.jupyterApp.commands.execute('notebook:change-cell-to-raw');
-      }
-      else if (this.options.cellType === "markdown") {
-        await this.jupyterApp.commands.execute('notebook:change-cell-to-markdown');
+      } else if (this.options.cellType === 'markdown') {
+        await this.jupyterApp.commands.execute(
+          'notebook:change-cell-to-markdown'
+        );
       }
       if (this.options.editorContent) {
         await insertText(
@@ -535,7 +536,6 @@ export class CreateCellsScenario
     }
   }
 }
-
 
 export class ScrollScenario
   extends SingleEditorScenario<ScrollScenarioOptions>
