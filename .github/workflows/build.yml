@@ -34,7 +34,7 @@ jobs:
     - name: Build the extension
       run: |
         set -eux
-        python -m pip install .[test]
+        python -m pip install .[test] setuptools
 
         jupyter labextension list
         jupyter labextension list 2>&1 | grep -ie "@jupyterlab/ui-profiler.*OK"
@@ -77,7 +77,7 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
 
-        pip install "jupyterlab~=3.1" jupyterlab_ui_profiler*.whl
+        pip install "jupyterlab~=3.1" jupyterlab_ui_profiler*.whl setuptools
 
 
         jupyter labextension list
