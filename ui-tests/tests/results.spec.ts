@@ -16,7 +16,7 @@ const fileNames = [
 const RESULTS_PATH = 'predefined-results';
 
 test.use({ tmpPath: 'results' });
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: 'parallel' });
 
 test.describe('Results', () => {
   test.beforeAll(async ({ baseURL, request, tmpPath }) => {
@@ -26,7 +26,7 @@ test.describe('Results', () => {
     await contents.createDirectory(RESULTS_PATH);
     for (const fileName of fileNames) {
       await contents.uploadFile(
-        path.resolve(__dirname, `./${RESULTS_PATH}/${fileName}`),
+        path.resolve(__dirname, `./ui-profiler-results/${fileName}`),
         `${tmpPath}/${fileName}`
       );
     }
