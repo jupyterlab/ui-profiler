@@ -35,7 +35,10 @@ test.describe('Results', () => {
   test.beforeEach(async ({ page }) => {
     await page
       .locator('body')
-      .evaluate(element => (element.dataset['profilerDir'] = RESULTS_PATH));
+      .evaluate(
+        (element, path) => (element.dataset['profilerDir'] = path),
+        RESULTS_PATH
+      );
     const handle = await page.waitForSelector(PROFILER_CARD_SELECTOR);
     await handle.click();
     await page

@@ -12,17 +12,19 @@ const REFRESH_BUTTON_SELECTOR = '[data-command="filebrowser:refresh"]';
 
 const HOME_SELECTOR = '.jp-BreadCrumbs-home';
 
+const RESULTS_PATH = 'ui-profiler-results';
+
 test.describe('Profiler UI', () => {
   test.beforeEach(async ({ baseURL, request }) => {
     const contents = galata.newContentsHelper(baseURL, undefined, request);
     // delete directory to ensure there are no stale results
-    await contents.deleteDirectory('ui-profiler-results');
+    await contents.deleteDirectory(RESULTS_PATH);
   });
 
   test.afterAll(async ({ baseURL, request }) => {
     const contents = galata.newContentsHelper(baseURL, undefined, request);
     // clean up results
-    await contents.deleteDirectory('ui-profiler-results');
+    await contents.deleteDirectory(RESULTS_PATH);
   });
 
   test('adds launcher card', async ({ page }) => {
@@ -57,14 +59,14 @@ test.describe('Profiler UI', () => {
       '.up-BenchmarkHistory-file >> text=execution-time_menuOpen'
     );
     const directoryLocator = page.locator(
-      '.jp-DirListing-item >> text="ui-profiler-results"'
+      `.jp-DirListing-item >> text="${RESULTS_PATH}"`
     );
     await page.locator(HOME_SELECTOR).click();
-    await expect(directoryLocator).toHaveCount(1);
+    await expect(directoryLocator).toHaveCount(0);
     await expect(resultLocator).toHaveCount(0);
     const startButton = await page.waitForSelector(START_BUTTON_SELECTOR);
     // delete it second time after it was created
-    await contents.deleteDirectory('ui-profiler-results');
+    await contents.deleteDirectory(RESULTS_PATH);
     const refreshButton = page.locator(REFRESH_BUTTON_SELECTOR);
     await refreshButton.click();
     await expect(directoryLocator).toHaveCount(0);
