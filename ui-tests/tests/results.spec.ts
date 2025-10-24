@@ -27,17 +27,17 @@ test.describe('Results', () => {
     for (const fileName of fileNames) {
       await contents.uploadFile(
         path.resolve(__dirname, `./ui-profiler-results/${fileName}`),
-        `${tmpPath}/${fileName}`
+        `${tmpPath}/${RESULTS_PATH}/${fileName}`
       );
     }
   });
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, tmpPath }) => {
     await page
       .locator('body')
       .evaluate(
         (element, path) => (element.dataset['profilerDir'] = path),
-        RESULTS_PATH
+        `${tmpPath}/${RESULTS_PATH}`
       );
     const handle = await page.waitForSelector(PROFILER_CARD_SELECTOR);
     await handle.click();
