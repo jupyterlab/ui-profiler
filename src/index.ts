@@ -73,7 +73,7 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
         return fileBrowserModel.upload(file);
       },
       getResultsLocation: () =>
-        PageConfig.getOption('profilerDir') ?? '/ui-profiler-results/'
+        PageConfig.getOption('profilerDir') || '/ui-profiler-results/'
     };
     let lastWidget: MainAreaWidget<UIProfilerWidget> | null = null;
 
