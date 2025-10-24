@@ -4,6 +4,7 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 import { MainAreaWidget, WidgetTracker } from '@jupyterlab/apputils';
+import { PageConfig } from '@jupyterlab/coreutils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { FileBrowserModel } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
@@ -71,7 +72,8 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
         // https://github.com/jupyterlab/jupyterlab/issues/11416
         return fileBrowserModel.upload(file);
       },
-      resultLocation: '/ui-profiler-results/'
+      getResultsLocation: () =>
+        PageConfig.getOption('profilerDir') || '/ui-profiler-results/'
     };
     let lastWidget: MainAreaWidget<UIProfilerWidget> | null = null;
 
