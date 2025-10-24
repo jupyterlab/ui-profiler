@@ -42,13 +42,13 @@ interface IProfilerProps {
    */
   translator: ITranslator;
   upload: (file: File) => Promise<Contents.IModel>;
-  resultLocation: string;
+  getResultsLocation: () => string;
 }
 
 interface ILauncherProps extends IProfilerProps {
   progress: Signal<any, IProgress>;
   onResult: (result: IBenchmarkResult) => void;
-  resultLocation: string;
+  getResultsLocation: () => string;
 }
 
 interface IMonitorProps extends IProfilerProps {
@@ -628,7 +628,7 @@ export class UIProfilerWidget extends ReactWidget {
 
   async ensureResultsDirectory() {
     return this.manager.contents
-      .save(this.props.resultLocation, {
+      .save(this.props.getResultsLocation(), {
         type: 'directory'
       })
       .catch(reason => {
@@ -699,7 +699,7 @@ interface IHistoryProps {
   manager: ServiceManager;
   onSelect: (file: Contents.IModel) => void;
   resultAdded: ISignal<any, IBenchmarkResult>;
-  resultLocation: string;
+  getResultsLocation: () => string;
 }
 
 interface IHistoryState {
@@ -729,7 +729,7 @@ export class BenchmarkHistory extends React.Component<
 
   async update(): Promise<void> {
     const dirModel = await this.props.manager.contents.get(
-      this.props.resultLocation
+      this.props.getResultsLocation()
     );
     const files = dirModel.content.filter((a: Contents.IModel) =>
       a.path.endsWith('.profile.json')
@@ -1142,7 +1142,7 @@ export class BenchmarkLauncher extends React.Component<
           await this.props.upload(
             new File(
               JSON.stringify(result).split('\n'),
-              PathExt.join(this.props.resultLocation, filename),
+              PathExt.join(this.props.getResultsLocation(), filename),
               {
                 type: 'application/json'
               }

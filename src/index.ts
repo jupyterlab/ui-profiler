@@ -72,7 +72,7 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
         // https://github.com/jupyterlab/jupyterlab/issues/11416
         return fileBrowserModel.upload(file);
       },
-      resultLocation:
+      getResultsLocation: () =>
         PageConfig.getOption('profilerDir') ?? '/ui-profiler-results/'
     };
     let lastWidget: MainAreaWidget<UIProfilerWidget> | null = null;
