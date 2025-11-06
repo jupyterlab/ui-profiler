@@ -13,11 +13,11 @@ export type NumberOfSheetRandomizations = number;
 export type RegularExpressionToFilterRulesToInclude = string;
 
 export interface StyleRuleGroupBenchmarkOptions {
-  repeats?: NumberOfRepeats;
-  skipPattern?: RegularExpressionToFilterOutRules;
-  minBlocks?: BlockSizeToStartWith;
-  maxBlocks?: MaximalBlockSize;
-  sheetRandomizations?: NumberOfSheetRandomizations;
-  includePattern?: RegularExpressionToFilterRulesToInclude;
+  repeats: NumberOfRepeats;
+  skipPattern: RegularExpressionToFilterOutRules;
+  minBlocks: BlockSizeToStartWith;
+  maxBlocks: MaximalBlockSize;
+  sheetRandomizations: NumberOfSheetRandomizations;
+  includePattern: RegularExpressionToFilterRulesToInclude;
   [k: string]: any;
 }

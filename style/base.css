@@ -49,11 +49,6 @@
   justify-content: space-between;
 }
 
-
-.up-BenchmarkLauncher-forms .array-item fieldset legend {
-  display: none;
-}
-
 .up-BenchmarkLauncher .array-item button {
   margin: 2px;
 }
@@ -74,13 +69,21 @@
   padding: 0;
 }
 
+.up-BenchmarkLauncher-forms .array-item fieldset legend {
+  display: none;
+}
+
 .up-BenchmarkLauncher-forms .jp-root > fieldset > legend {
   font-size: var(--jp-ui-font-size1);
   font-weight: 600;
 }
 
 .up-BenchmarkLauncher-forms .jp-FormGroup-content .jp-root > fieldset > legend {
-  display: block
+  display: block;
+}
+
+.jp-arrayFieldWrapper + .jp-FormGroup-description {
+  display: none;
 }
 
 .up-BenchmarkLauncher-forms .jp-FormGroup-content {

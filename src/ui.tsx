@@ -1212,8 +1212,6 @@ export class BenchmarkLauncher extends React.Component<
                 }
                 benchmark.configSchema.title =
                   benchmark.name + ' configuration';
-                  console.log(benchmark.configSchema)
-                  console.log(this._config.benchmarks)
                 return (
                   <FormComponent
                     key={'up-profiler-benchmark-' + benchmark.id}
@@ -1254,7 +1252,6 @@ export class BenchmarkLauncher extends React.Component<
                   return <OptionsStub name={scenario.name} />;
                 }
                 scenario.configSchema.title = scenario.name + ' configuration';
-                console.log(this._config.scenarios[scenario.id])
                 return (
                   <FormComponent
                     key={'up-profiler-scenario-' + scenario.id}
