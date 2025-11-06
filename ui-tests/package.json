@@ -9,7 +9,7 @@
     "test:update": "jlpm playwright test --update-snapshots"
   },
   "devDependencies": {
-    "@jupyterlab/galata": "^4.5.0"
+    "@jupyterlab/galata": "^5.0.5"
   },
   "resolutions": {
     "vega-lite": "~5.5.0"
