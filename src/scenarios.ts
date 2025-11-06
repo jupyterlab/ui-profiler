@@ -551,9 +551,8 @@ export class CustomScenario implements IScenario {
       const commandIds = jupyterApp.commands.listCommands();
       commandSchema['oneOf'] = await Promise.all(
         commandIds.map(async commandId => {
-          const commandSchema = await jupyterApp.commands.describedBy(
-            commandId
-          );
+          const commandSchema =
+            await jupyterApp.commands.describedBy(commandId);
           return {
             type: 'object',
             title: `Arguments for ${commandId}`,
@@ -589,7 +588,7 @@ export class CustomScenario implements IScenario {
     if (!this.options) {
       throw new Error('Options not set for scenario.');
     }
-    for (let command of this.options.setupCommands) {
+    for (const command of this.options.setupCommands) {
       await this.jupyterApp.commands.execute(command.id, command.args);
       await layoutReady();
     }
@@ -600,7 +599,7 @@ export class CustomScenario implements IScenario {
     if (!this.options) {
       throw new Error('Options not set for scenario.');
     }
-    for (let command of this.options.commands) {
+    for (const command of this.options.commands) {
       await this.jupyterApp.commands.execute(command.id, command.args);
       await layoutReady();
     }
@@ -610,7 +609,7 @@ export class CustomScenario implements IScenario {
     if (!this.options) {
       throw new Error('Options not set for scenario.');
     }
-    for (let command of this.options.cleanupCommands) {
+    for (const command of this.options.cleanupCommands) {
       await this.jupyterApp.commands.execute(command.id, command.args);
       await layoutReady();
     }
