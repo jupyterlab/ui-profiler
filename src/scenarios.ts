@@ -572,9 +572,14 @@ export class CustomScenario implements IScenario {
         })
       );
       commandSchema['properties']['id']['oneOf'] = commandIds.map(commandId => {
+        // https://github.com/jupyterlab/ui-profiler/pull/60
+        const title =
+          commandId === 'fileeditor:change-font-size'
+            ? 'Change font size'
+            : jupyterApp.commands.label(commandId) || commandId;
         return {
           const: commandId,
-          title: jupyterApp.commands.label(commandId) || commandId
+          title
         };
       });
     });
