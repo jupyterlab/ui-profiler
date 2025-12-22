@@ -22,10 +22,13 @@ import { executionTimeBenchmark } from './benchmark';
 import { IBenchmark, IUIProfiler } from './tokens';
 import { UIProfiler } from './profiler';
 import { plugin as scenariosPlugin } from './scenarios';
+import { layoutReady, page } from './dramaturg';
 
 namespace CommandIDs {
   // export const findUnusedStyles = 'ui-profiler:find-unused-styles';
   export const openProfiler = 'ui-profiler:open';
+  export const waitForLayout = 'ui-profiler:wait-for-layout';
+  export const waitForSelector = 'ui-profiler:wait-for-selector';
 }
 
 /**
@@ -112,6 +115,41 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
       label: 'UI Profiler',
       icon: offlineBoltIcon,
       caption: 'Open JupyterLab UI Profiler'
+    });
+
+    app.commands.addCommand(CommandIDs.waitForLayout, {
+      execute: async () => {
+        await layoutReady();
+      },
+      label: 'UI Profiler: Wait For Layout'
+    });
+
+    app.commands.addCommand(CommandIDs.waitForSelector, {
+      execute: async (args: any) => {
+        await page.waitForSelector(args.selector, args.state ?? 'visible');
+      },
+      describedBy: {
+        args: {
+          type: 'object',
+          properties: {
+            selector: {
+              type: 'string',
+              description: 'CSS selector to use',
+            },
+            state: {
+              type: 'string',
+              enum: ['visible', 'hidden', 'attached', 'detached'],
+              description: 'State to await for',
+              default: 'visible'
+            },
+          },
+          default: {
+            selector: '',
+            state: 'visible'
+          }
+        }
+      },
+      label: 'UI Profiler: Wait For Page Selector'
     });
 
     // TODO this does work and allows to avoid defining a custom tracker
