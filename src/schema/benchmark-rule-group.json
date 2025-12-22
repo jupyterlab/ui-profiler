@@ -36,5 +36,13 @@
       "type": "string",
       "default": ""
     }
-  }
+  },
+  "required": [
+    "repeats",
+    "skipPattern",
+    "minBlocks",
+    "maxBlocks",
+    "sheetRandomizations",
+    "includePattern"
+  ]
 }

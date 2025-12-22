@@ -9,6 +9,7 @@ export type { ExecutionTimeBenchmarkOptions } from './_benchmark-execution';
 export type { TabScenarioOptions } from './_scenario-tabs';
 export type { MenuOpenScenarioOptions } from './_scenario-menu-open';
 export type { CompleterScenarioOptions } from './_scenario-completer';
+export type { CustomScenarioOptions } from './_scenario-custom';
 export type { SidebarsScenarioOptions } from './_scenario-sidebars';
 export type { ScrollScenarioOptions } from './_scenario-scroll';
 export type { CreateCellsScenarioOptions } from './_scenario-create-cells';

@@ -22,7 +22,8 @@ import type {
   TabScenarioOptions,
   ScrollScenarioOptions,
   DebuggerScenarioOptions,
-  CreateCellsScenarioOptions
+  CreateCellsScenarioOptions,
+  CustomScenarioOptions
 } from './types';
 
 import scenarioOptionsSchema from './schema/scenario-base.json';
@@ -33,6 +34,7 @@ import scenarioDebuggerOptionsSchema from './schema/scenario-debugger.json';
 import scenarioSidebarsSchema from './schema/scenario-sidebars.json';
 import scenarioScrollSchema from './schema/scenario-scroll.json';
 import scenarioCreateCellsSchema from './schema/scenario-create-cells.json';
+import scenarioCustomSchema from './schema/scenario-custom.json';
 
 async function switchMainMenu(jupyterApp: JupyterFrontEnd) {
   for (const menu of ['edit', 'view', 'run', 'kernel', 'settings', 'help']) {
@@ -537,6 +539,88 @@ export class CreateCellsScenario
   }
 }
 
+export class CustomScenario implements IScenario {
+  id = 'custom';
+  name = 'Custom Scenario';
+  configSchema = scenarioCustomSchema as any as JSONSchema7;
+  options: CustomScenarioOptions | undefined;
+
+  constructor(protected jupyterApp: JupyterFrontEnd) {
+    jupyterApp.restored.then(async () => {
+      const commandSchema = this.configSchema.definitions!['command'] as any;
+      const commandIds = jupyterApp.commands.listCommands();
+      commandSchema['oneOf'] = await Promise.all(
+        commandIds.map(async commandId => {
+          const commandSchema =
+            await jupyterApp.commands.describedBy(commandId);
+          return {
+            type: 'object',
+            title: `Arguments for ${commandId}`,
+            properties: {
+              id: {
+                type: 'string',
+                const: commandId
+              },
+              args: commandSchema['args']
+                ? commandSchema['args']
+                : {
+                    type: 'object',
+                    additionalProperties: true
+                  }
+            }
+          };
+        })
+      );
+      commandSchema['properties']['id']['oneOf'] = commandIds.map(commandId => {
+        // https://github.com/jupyterlab/ui-profiler/pull/60
+        const title =
+          commandId === 'fileeditor:change-font-size'
+            ? 'Change font size'
+            : jupyterApp.commands.label(commandId) || commandId;
+        return {
+          const: commandId,
+          title
+        };
+      });
+    });
+  }
+
+  setOptions(options: CustomScenarioOptions): void {
+    this.options = options;
+  }
+
+  async setupSuite(): Promise<void> {
+    if (!this.options) {
+      throw new Error('Options not set for scenario.');
+    }
+    for (const command of this.options.setupCommands) {
+      await this.jupyterApp.commands.execute(command.id, command.args);
+      await layoutReady();
+    }
+    await layoutReady();
+  }
+
+  async run(): Promise<void> {
+    if (!this.options) {
+      throw new Error('Options not set for scenario.');
+    }
+    for (const command of this.options.commands) {
+      await this.jupyterApp.commands.execute(command.id, command.args);
+      await layoutReady();
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    if (!this.options) {
+      throw new Error('Options not set for scenario.');
+    }
+    for (const command of this.options.cleanupCommands) {
+      await this.jupyterApp.commands.execute(command.id, command.args);
+      await layoutReady();
+    }
+  }
+}
+
 export class ScrollScenario
   extends SingleEditorScenario<ScrollScenarioOptions>
   implements IScenario
@@ -690,7 +774,8 @@ export const plugin: JupyterFrontEndPlugin<void> = {
       new CompleterScenario(app),
       new ScrollScenario(app),
       new DebuggerScenario(app),
-      new CreateCellsScenario(app)
+      new CreateCellsScenario(app),
+      new CustomScenario(app)
     ].map(scenario => profiler.addScenario(scenario));
   }
 };

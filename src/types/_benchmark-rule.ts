@@ -10,8 +10,8 @@ export type RegularExpressionToFilterOutRules = string;
 export type RegularExpressionToFilterRulesToInclude = string;
 
 export interface StyleRuleBenchmarkOptions {
-  repeats?: NumberOfRepeats;
-  skipPattern?: RegularExpressionToFilterOutRules;
-  includePattern?: RegularExpressionToFilterRulesToInclude;
+  repeats: NumberOfRepeats;
+  skipPattern: RegularExpressionToFilterOutRules;
+  includePattern: RegularExpressionToFilterRulesToInclude;
   [k: string]: any;
 }

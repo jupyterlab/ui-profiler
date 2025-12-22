@@ -9,7 +9,7 @@ export type NumberOfRepeats = number;
 export type RegularExpressionToFilterSheetsToBenchmark = string;
 
 export interface StyleSheetBenchmarkOptions {
-  repeats?: NumberOfRepeats;
-  includePattern?: RegularExpressionToFilterSheetsToBenchmark;
+  repeats: NumberOfRepeats;
+  includePattern: RegularExpressionToFilterSheetsToBenchmark;
   [k: string]: any;
 }

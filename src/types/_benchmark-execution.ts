@@ -8,6 +8,6 @@
 export type NumberOfRepeats = number;
 
 export interface ExecutionTimeBenchmarkOptions {
-  repeats?: NumberOfRepeats;
+  repeats: NumberOfRepeats;
   [k: string]: any;
 }

@@ -23,5 +23,11 @@
       "type": "string",
       "default": ""
     }
-  }
+  },
+  "required": [
+    "repeats",
+    "skipPattern",
+    "excludeMatchPattern",
+    "includePattern"
+  ]
 }

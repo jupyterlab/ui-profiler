@@ -1,0 +1,53 @@
+{
+  "title": "Custom Scenario Options",
+  "type": "object",
+  "definitions": {
+    "command": {
+      "description": "Command to execute",
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Command",
+          "description": "Command ID",
+          "type": "string"
+        },
+        "args": {
+          "title": "Arguments",
+          "description": "Command arguments",
+          "type": "object"
+        }
+      },
+      "required": ["id", "args"]
+    }
+  },
+  "properties": {
+    "setupCommands": {
+      "title": "Setup commands",
+      "description": "Commands used for scenario setup",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/command"
+      },
+      "default": []
+    },
+    "commands": {
+      "title": "Commands to execute",
+      "description": "Commands used for scenario profiling/benchmarking",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/command"
+      },
+      "default": []
+    },
+    "cleanupCommands": {
+      "title": "Cleanup commands",
+      "description": "Commands used for scenario cleanup",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/command"
+      },
+      "default": []
+    }
+  },
+  "required": ["setupCommands", "commands", "cleanupCommands"]
+}

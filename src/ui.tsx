@@ -1,4 +1,3 @@
-import Form from '@rjsf/core';
 import React from 'react';
 import { ReactWidget, UseSignal, showErrorMessage } from '@jupyterlab/apputils';
 import { Contents, ServiceManager } from '@jupyterlab/services';
@@ -7,15 +6,14 @@ import { ITranslator } from '@jupyterlab/translation';
 import { JSONExt, JSONObject } from '@lumino/coreutils';
 import { PathExt } from '@jupyterlab/coreutils';
 import { Signal, ISignal } from '@lumino/signaling';
+
+import validatorAjv8 from '@rjsf/validator-ajv8';
+import { FormComponent } from '@jupyterlab/ui-components';
 import { Component as JSONComponent } from '@jupyterlab/json-extension/lib/component';
 import { formatTime, extractBrowserVersion } from './utils';
 import { IRuleBlockResult } from './styleBenchmarks';
 import { extractTimes, iterateFrames } from './jsBenchmarks';
-import {
-  CustomTemplateFactory,
-  CustomArrayTemplateFactory,
-  CustomObjectTemplateFactory
-} from './templates';
+
 import { Statistic } from './statistics';
 import { TimingTable, ResultTable } from './table';
 import { LuminoWidget } from './lumino';
@@ -271,18 +269,6 @@ export class ProfileTrace extends React.Component<
 interface IProfilerState {
   benchmarks: Array<IBenchmark<ITimingOutcome> | IBenchmark<IProfilingOutcome>>;
   scenarios: Array<IScenario>;
-  /**
-   * Field template
-   */
-  fieldTemplate?: ReturnType<typeof CustomTemplateFactory>;
-  /**
-   * Array Field template
-   */
-  arrayFieldTemplate?: ReturnType<typeof CustomArrayTemplateFactory>;
-  /**
-   * Object Field template
-   */
-  objectFieldTemplate?: ReturnType<typeof CustomObjectTemplateFactory>;
   /**
    * Is any benchmark currently running?
    */
@@ -1045,9 +1031,6 @@ export class BenchmarkLauncher extends React.Component<
       benchmarks:
         profiler.benchmarks.length !== 0 ? [profiler.benchmarks[0]] : [],
       scenarios: profiler.scenarios.length !== 0 ? [profiler.scenarios[0]] : [],
-      fieldTemplate: CustomTemplateFactory(this.props.translator),
-      arrayFieldTemplate: CustomArrayTemplateFactory(this.props.translator),
-      objectFieldTemplate: CustomObjectTemplateFactory(this.props.translator),
       isRunning: false
     };
     this.runSelected = this.runSelected.bind(this);
@@ -1154,7 +1137,7 @@ export class BenchmarkLauncher extends React.Component<
     } catch (e) {
       if (!stop) {
         this.props.progress.emit({ percentage: NaN, errored: true });
-        void showErrorMessage('Benchmark failed', e);
+        void showErrorMessage('Benchmark failed', `${e}`);
       } else {
         this.props.progress.emit({ percentage: NaN, interrupted: true });
       }
@@ -1230,19 +1213,21 @@ export class BenchmarkLauncher extends React.Component<
                 benchmark.configSchema.title =
                   benchmark.name + ' configuration';
                 return (
-                  <Form
+                  <FormComponent
                     key={'up-profiler-benchmark-' + benchmark.id}
+                    validator={validatorAjv8}
                     schema={benchmark.configSchema}
-                    idPrefix={'up-profiler-benchmark'}
-                    onChange={form => {
-                      this._config.benchmarks[benchmark.id] =
-                        form.formData as JSONObject;
-                    }}
                     formData={this._config.benchmarks[benchmark.id]}
-                    FieldTemplate={this.state.fieldTemplate}
-                    ArrayFieldTemplate={this.state.arrayFieldTemplate}
-                    ObjectFieldTemplate={this.state.objectFieldTemplate}
                     liveValidate
+                    idPrefix={`up-profiler-benchmark-${benchmark.id}`}
+                    onChange={(e: any) => {
+                      this._config.benchmarks[benchmark.id] =
+                        e.formData as JSONObject;
+                    }}
+                    translator={this.props.translator}
+                    experimental_defaultFormStateBehavior={{
+                      emptyObjectFields: 'populateRequiredDefaults'
+                    }}
                   />
                 );
               })}
@@ -1268,19 +1253,21 @@ export class BenchmarkLauncher extends React.Component<
                 }
                 scenario.configSchema.title = scenario.name + ' configuration';
                 return (
-                  <Form
+                  <FormComponent
                     key={'up-profiler-scenario-' + scenario.id}
+                    validator={validatorAjv8}
                     schema={scenario.configSchema}
-                    idPrefix={'up-profiler-scenario-' + scenario.id}
-                    onChange={form => {
-                      this._config.scenarios[scenario.id] =
-                        form.formData as JSONObject;
-                    }}
                     formData={this._config.scenarios[scenario.id]}
-                    FieldTemplate={this.state.fieldTemplate}
-                    ArrayFieldTemplate={this.state.arrayFieldTemplate}
-                    ObjectFieldTemplate={this.state.objectFieldTemplate}
                     liveValidate
+                    idPrefix={`up-profiler-scenario-${scenario.id}`}
+                    onChange={(e: any) => {
+                      this._config.scenarios[scenario.id] =
+                        e.formData as JSONObject;
+                    }}
+                    translator={this.props.translator}
+                    experimental_defaultFormStateBehavior={{
+                      emptyObjectFields: 'populateRequiredDefaults'
+                    }}
                   />
                 );
               })}

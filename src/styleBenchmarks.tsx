@@ -82,7 +82,7 @@ export const styleRuleUsageBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> =
     configSchema: benchmarkRuleUsageOptionsSchema as JSONSchema7,
     run: async (
       scenario: IScenario,
-      options: StyleRuleUsageOptions = {},
+      options: StyleRuleUsageOptions = {} as any,
       progress,
       stopSignal
     ): Promise<ITimingOutcome<IRuleResult>> => {
@@ -290,7 +290,7 @@ export const styleSheetsBenchmark: IBenchmark<
   configSchema: benchmarkSheetOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: StyleSheetBenchmarkOptions = {},
+    options: StyleSheetBenchmarkOptions = {} as any,
     progress,
     stopSignal
   ): Promise<ITimingOutcome<IStylesheetResult>> => {
@@ -391,7 +391,7 @@ export const styleRuleBenchmark: IBenchmark<ITimingOutcome<IRuleResult>> = {
   configSchema: benchmarkRuleOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: StyleRuleBenchmarkOptions = {},
+    options: StyleRuleBenchmarkOptions = {} as any,
     progress,
     stopSignal
   ): Promise<ITimingOutcome<IRuleResult>> => {
@@ -476,7 +476,7 @@ export const styleRuleGroupBenchmark: IBenchmark<
   configSchema: benchmarkRuleGroupOptionsSchema as JSONSchema7,
   run: async (
     scenario: IScenario,
-    options: StyleRuleGroupBenchmarkOptions = {},
+    options: StyleRuleGroupBenchmarkOptions = {} as any,
     progress,
     stopSignal
   ): Promise<ITimingOutcome<IRuleBlockResult>> => {

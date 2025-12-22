@@ -21,7 +21,7 @@
 
 .up-BenchmarkLauncher-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: fit-content(50%) 1fr;
   overflow: hidden;
   height: 100%;
 }
@@ -32,6 +32,10 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
+}
+
+.up-BenchmarkLauncher-card:first-child {
+  resize: horizontal;
 }
 
 .up-BenchmarkLauncher-card:last-child {
@@ -69,9 +73,21 @@
   padding: 0;
 }
 
+.up-BenchmarkLauncher-forms .array-item fieldset legend {
+  display: none;
+}
+
 .up-BenchmarkLauncher-forms .jp-root > fieldset > legend {
   font-size: var(--jp-ui-font-size1);
   font-weight: 600;
+}
+
+.up-BenchmarkLauncher-forms .jp-FormGroup-content .jp-root > fieldset > legend {
+  display: block;
+}
+
+.jp-arrayFieldWrapper + .jp-FormGroup-description {
+  display: none;
 }
 
 .up-BenchmarkLauncher-forms .jp-FormGroup-content {
@@ -366,8 +382,8 @@
   fill: var(--jp-brand-color2);
   stroke: var(--jp-brand-color1);
   stroke-width: 2;
-  fill-opacity: 60%;
-  stroke-opacity: 100%;
+  fill-opacity: 0.6;
+  stroke-opacity: 1;
 }
 
 .up-BoxPlot .box-line {
@@ -395,3 +411,12 @@
 .up-BoxPlot .tickLabel {
   fill: var(--jp-content-font-color1);
 }
+
+/* stylelint-disable */
+#up-profiler-scenario-custom_setupCommands_0__oneof_select,
+#up-profiler-scenario-custom_commands_0__oneof_select,
+#up-profiler-scenario-custom_cleanupCommands_0__oneof_select {
+  /* hide redundant dropdown for arguments */
+  display: none;
+}
+/* stylelint-enable */

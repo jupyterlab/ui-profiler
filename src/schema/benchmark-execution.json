@@ -8,5 +8,6 @@
       "minimum": 1,
       "default": 500
     }
-  }
+  },
+  "required": ["repeats"]
 }
