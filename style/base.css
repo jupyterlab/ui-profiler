@@ -21,7 +21,7 @@
 
 .up-BenchmarkLauncher-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: fit-content(50%) 1fr;
   overflow: hidden;
   height: 100%;
 }
@@ -32,6 +32,10 @@
   padding: 8px;
   display: flex;
   flex-direction: column;
+}
+
+.up-BenchmarkLauncher-card:first-child {
+  resize: horizontal;
 }
 
 .up-BenchmarkLauncher-card:last-child {
@@ -407,3 +411,12 @@
 .up-BoxPlot .tickLabel {
   fill: var(--jp-content-font-color1);
 }
+
+/* stylelint-disable */
+#up-profiler-scenario-custom_setupCommands_0__oneof_select,
+#up-profiler-scenario-custom_commands_0__oneof_select,
+#up-profiler-scenario-custom_cleanupCommands_0__oneof_select {
+  /* hide redundant dropdown for arguments */
+  display: none;
+}
+/* stylelint-enable */
