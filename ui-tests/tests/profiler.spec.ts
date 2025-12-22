@@ -15,14 +15,14 @@ const HOME_SELECTOR = '.jp-BreadCrumbs-home';
 const RESULTS_PATH = 'ui-profiler-results';
 
 test.describe('Profiler UI', () => {
-  test.beforeEach(async ({ baseURL, request }) => {
-    const contents = galata.newContentsHelper(baseURL, undefined, request);
+  test.beforeEach(async ({ request }) => {
+    const contents = galata.newContentsHelper(request);
     // delete directory to ensure there are no stale results
     await contents.deleteDirectory(RESULTS_PATH);
   });
 
-  test.afterAll(async ({ baseURL, request }) => {
-    const contents = galata.newContentsHelper(baseURL, undefined, request);
+  test.afterAll(async ({ request }) => {
+    const contents = galata.newContentsHelper(request);
     // clean up results
     await contents.deleteDirectory(RESULTS_PATH);
   });
@@ -49,10 +49,9 @@ test.describe('Profiler UI', () => {
 
   test('creates result even after removing results directory', async ({
     page,
-    request,
-    baseURL
+    request
   }) => {
-    const contents = galata.newContentsHelper(baseURL, undefined, request);
+    const contents = galata.newContentsHelper(request);
     const handle = await page.waitForSelector(PROFILER_CARD_SELECTOR);
     await handle.click();
     const resultLocator = page.locator(

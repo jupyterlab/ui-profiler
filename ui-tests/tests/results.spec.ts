@@ -19,8 +19,8 @@ test.use({ tmpPath: 'results' });
 test.describe.configure({ mode: 'parallel' });
 
 test.describe('Results', () => {
-  test.beforeAll(async ({ baseURL, request, tmpPath }) => {
-    const contents = galata.newContentsHelper(baseURL, undefined, request);
+  test.beforeAll(async ({ request, tmpPath }) => {
+    const contents = galata.newContentsHelper(request);
     // re-create directory to ensure there are no stale results
     await contents.deleteDirectory(RESULTS_PATH);
     await contents.createDirectory(RESULTS_PATH);
