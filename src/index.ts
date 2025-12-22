@@ -134,14 +134,14 @@ const interfacePlugin: JupyterFrontEndPlugin<void> = {
           properties: {
             selector: {
               type: 'string',
-              description: 'CSS selector to use',
+              description: 'CSS selector to use'
             },
             state: {
               type: 'string',
               enum: ['visible', 'hidden', 'attached', 'detached'],
               description: 'State to await for',
               default: 'visible'
-            },
+            }
           },
           default: {
             selector: '',
