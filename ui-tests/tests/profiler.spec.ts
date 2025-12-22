@@ -6,7 +6,7 @@ const PROFILER_CARD_SELECTOR =
 const START_BUTTON_SELECTOR =
   '.up-BenchmarkLauncher-launchbar-buttons .jp-mod-accept';
 
-const REPEATS_INPUT_SELECTOR = '#up-profiler-benchmark_repeats';
+const REPEATS_INPUT_SELECTOR = '#up-profiler-benchmark-execution-time_repeats';
 
 const REFRESH_BUTTON_SELECTOR = '[data-command="filebrowser:refresh"]';
 
