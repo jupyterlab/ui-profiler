@@ -6,9 +6,9 @@
  */
 
 /**
- * Command ID.
+ * Command ID
  */
-export type Identifier = string;
+export type Command1 = string;
 /**
  * Commands used for scenario setup
  */
@@ -32,12 +32,12 @@ export interface CustomScenarioOptions {
  * Command to execute
  */
 export interface Command {
-  id: Identifier;
+  id: Command1;
   args: Arguments;
   [k: string]: any;
 }
 /**
- * Command arguments.
+ * Command arguments
  */
 export interface Arguments {
   [k: string]: any;

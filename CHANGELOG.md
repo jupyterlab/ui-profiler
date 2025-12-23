@@ -2,6 +2,36 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.3.0
+
+([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.2.2...90f5626c43ea56d2c580bf6e7b8bdcddb87ca3f3))
+
+### Enhancements made
+
+- Support UI-defined custom scenarios [#60](https://github.com/jupyterlab/ui-profiler/pull/60) ([@krassowski](https://github.com/krassowski))
+- Implement a scenario for populating the notebook, fix tests [#57](https://github.com/jupyterlab/ui-profiler/pull/57) ([@krassowski](https://github.com/krassowski))
+
+### Maintenance and upkeep improvements
+
+- Add releaser workflows & cleanup after dependabot [#63](https://github.com/jupyterlab/ui-profiler/pull/63) ([@krassowski](https://github.com/krassowski))
+- Bump vega from 5.24.0 to 5.33.0 in /ui-tests [#62](https://github.com/jupyterlab/ui-profiler/pull/62) ([@krassowski](https://github.com/krassowski))
+- Bump glob from 10.4.5 to 10.5.0 in /ui-tests [#61](https://github.com/jupyterlab/ui-profiler/pull/61) ([@krassowski](https://github.com/krassowski))
+- Fix browser check and integration tests [#59](https://github.com/jupyterlab/ui-profiler/pull/59) ([@krassowski](https://github.com/krassowski))
+- Update GitHub Actions [#58](https://github.com/jupyterlab/ui-profiler/pull/58) ([@krassowski](https://github.com/krassowski))
+- Updated integration tests workflow [#56](https://github.com/jupyterlab/ui-profiler/pull/56) ([@krassowski](https://github.com/krassowski))
+- Bump systeminformation from 5.16.6 to 5.21.8 in /ui-tests [#55](https://github.com/jupyterlab/ui-profiler/pull/55) ([@krassowski](https://github.com/krassowski))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-05-01&to=2025-12-23&type=c))
+
+@krassowski ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-05-01..2025-12-23&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.2.2
 
 ([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.2.1...61c99c34b8de4ff8f0ac0da4b1af50e774cd543a))
@@ -15,8 +45,6 @@
 ([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-04-30&to=2023-05-01&type=c))
 
 [@krassowski](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-04-30..2023-05-01&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.2.1
 
