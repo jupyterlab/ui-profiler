@@ -2,6 +2,38 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 0.3.1
+
+([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.3.0...79f5bc55c8946051ca1599012d526810d066c513))
+
+### Bugs fixed
+
+- Fix setup for tab switching scenario, and invocation of completer [#97](https://github.com/jupyterlab/ui-profiler/pull/97) ([@krassowski](https://github.com/krassowski))
+
+### Maintenance and upkeep improvements
+
+- Bump tar from 7.5.9 to 7.5.11 in /ui-tests [#72](https://github.com/jupyterlab/ui-profiler/pull/72) ([@krassowski](https://github.com/krassowski))
+- Bump minimatch from 9.0.5 to 9.0.9 in /ui-tests [#70](https://github.com/jupyterlab/ui-profiler/pull/70) ([@krassowski](https://github.com/krassowski))
+- Bump tar from 7.5.1 to 7.5.9 in /ui-tests [#68](https://github.com/jupyterlab/ui-profiler/pull/68) ([@krassowski](https://github.com/krassowski))
+- Bump systeminformation from 5.27.15 to 5.31.1 in /ui-tests [#67](https://github.com/jupyterlab/ui-profiler/pull/67) ([@krassowski](https://github.com/krassowski))
+- Bump lodash from 4.17.21 to 4.17.23 in /ui-tests [#65](https://github.com/jupyterlab/ui-profiler/pull/65) ([@krassowski](https://github.com/krassowski))
+
+### Other merged PRs
+
+- Bump dompurify from 3.3.1 to 3.3.3 in /ui-tests [#74](https://github.com/jupyterlab/ui-profiler/pull/74) ([@krassowski](https://github.com/krassowski))
+- Bump picomatch from 2.3.1 to 2.3.2 in /ui-tests [#73](https://github.com/jupyterlab/ui-profiler/pull/73) ([@krassowski](https://github.com/krassowski))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2025-12-23&to=2026-07-03&type=c))
+
+@krassowski ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2025-12-23..2026-07-03&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 0.3.0
 
 ([Full Changelog](https://github.com/jupyterlab/ui-profiler/compare/v0.2.2...90f5626c43ea56d2c580bf6e7b8bdcddb87ca3f3))
@@ -29,8 +61,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/jupyterlab/ui-profiler/graphs/contributors?from=2023-05-01&to=2025-12-23&type=c))
 
 @krassowski ([activity](https://github.com/search?q=repo%3Ajupyterlab%2Fui-profiler+involves%3Akrassowski+updated%3A2023-05-01..2025-12-23&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 0.2.2
 
