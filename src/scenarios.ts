@@ -313,7 +313,6 @@ export class CompleterScenario
     } else {
       await this.jupyterApp.commands.execute('completer:invoke-file');
     }
-    //await page.press('Tab');
     await layoutReady();
     // Note: in JupyterLab 3.x all completers were retained in the attached state
     // (which may have had a performance benefit to some point, but later was just
@@ -736,7 +735,7 @@ export class SwitchTabScenario implements IScenario {
         this.jupyterApp.shell.add(widget, 'main', { mode: 'split-right' });
       }
       await activateTabWidget(this.jupyterApp, widget);
-      
+
       if (tab.path && tab.path?.endsWith('.ipynb')) {
         await page.waitForSelector('.jp-SpinnerContent', {
           state: 'hidden',
@@ -744,7 +743,7 @@ export class SwitchTabScenario implements IScenario {
           within: document.getElementById(widget.id)!
         });
       }
-      
+
       await layoutReady();
       this._widgets.push(widget);
     }
